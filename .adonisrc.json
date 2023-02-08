@@ -5,7 +5,8 @@
         "@adonisjs/core/build/commands/index.js",
         "@adonisjs/repl/build/commands",
         "@adonisjs/lucid/build/commands",
-        "@adonisjs/bouncer/build/commands"
+        "@adonisjs/bouncer/build/commands",
+        "@rocketseat/adonis-bull/build/commands"
     ],
     "exceptionHandlerNamespace": "App/Exceptions/Handler",
     "aliases": {
@@ -17,7 +18,9 @@
     "preloads": [
         "./start/routes",
         "./start/kernel",
-        "./start/bouncer"
+        "./start/bouncer",
+        "./start/events",
+        "./start/bull"
     ],
     "providers": [
         "./providers/AppProvider",
@@ -26,7 +29,8 @@
         "@adonisjs/auth",
         "@adonisjs/bouncer",
         "adonis5-jwt",
-        "adonis-lucid-soft-deletes"
+        "adonis-lucid-soft-deletes",
+        "@rocketseat/adonis-bull"
     ],
     "aceProviders": [
         "@adonisjs/repl"
