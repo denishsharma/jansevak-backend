@@ -20,6 +20,19 @@
 
 import Route from "@ioc:Adonis/Core/Route";
 
+import permissionRoutes from "../routes/permissionRoutes";
+import authRoutes from "../routes/authRoutes";
+import userRoutes from "../routes/userRoutes";
+import profileRoutes from "../routes/profileRoutes";
+
 Route.get("/", async () => {
     return { hello: "world" };
 });
+
+Route.group(() => {
+    authRoutes();
+    userRoutes();
+    permissionRoutes();
+    profileRoutes();
+}).prefix("/api/");
+
