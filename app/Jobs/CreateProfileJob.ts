@@ -26,7 +26,6 @@ export default class CreateProfileJob implements JobContract {
         const profile = await Profile.create({
             userId: data.id,
             email: data.email,
-            phoneNumber: data.phoneNumber,
         });
 
         await Address.create({

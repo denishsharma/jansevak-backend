@@ -1,7 +1,8 @@
 import { DateTime } from "luxon";
-import { BaseModel, column, belongsTo, BelongsTo, hasOne, HasOne } from "@ioc:Adonis/Lucid/Orm";
+import { BaseModel, computed, column, belongsTo, BelongsTo, hasOne, HasOne } from "@ioc:Adonis/Lucid/Orm";
 import User from "App/Models/User";
 import Address from "App/Models/Address";
+import { string } from "@ioc:Adonis/Core/Helpers";
 
 export default class Profile extends BaseModel {
     @column({ isPrimary: true })
@@ -29,9 +30,6 @@ export default class Profile extends BaseModel {
     public voterIdNumber: string | null;
 
     @column()
-    public phoneNumber: string | null;
-
-    @column()
     public email: string | null;
 
     @column.dateTime()
@@ -46,9 +44,28 @@ export default class Profile extends BaseModel {
     @column.dateTime({ autoCreate: true, autoUpdate: true })
     public updatedAt: DateTime;
 
+    /**
+     * Get the user.
+     * @type {BelongsTo<typeof User>}
+     */
     @belongsTo(() => User)
     public user: BelongsTo<typeof User>;
 
+    /**
+     * Get the address.
+     * @type {HasOne<typeof Address>}
+     */
     @hasOne(() => Address)
     public address: HasOne<typeof Address>;
+
+    @computed()
+    public get fullName(): string {
+        return string.condenseWhitespace(`${this.firstName} ${this.middleName} ${this.lastName}`);
+    }
+
+    @computed()
+    public get initialsAndLastName(): string {
+        return string.condenseWhitespace(`${this.firstName?.charAt(0)} ${this.middleName?.charAt(0)} ${this.lastName}`);
+    }
+
 }

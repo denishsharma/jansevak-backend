@@ -16,7 +16,6 @@ export default class extends BaseSchema {
             table.string("pan_number", 255).nullable();
             table.string("voter_id_number", 255).nullable();
 
-            table.string("phone_number", 255).nullable();
             table.string("email", 255).nullable();
             table.timestamp("birth_date").nullable();
 
