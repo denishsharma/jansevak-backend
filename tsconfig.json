@@ -34,8 +34,7 @@
             "@adonisjs/bouncer",
             "adonis5-jwt",
             "adonis-lucid-soft-deletes",
-            "@rocketseat/adonis-bull",
-            "@melchyore/adonis-auto-preload"
+            "@rocketseat/adonis-bull"
         ]
     }
 }
