@@ -13,6 +13,8 @@ export default class extends BaseSchema {
             table.string("password", 180).nullable();
             table.string("remember_me_token").nullable();
 
+            table.integer("ward_id").nullable().unsigned().index();
+
             // Statuses & Types
             table.boolean("is_registered").defaultTo(false);
             table.boolean("is_archived").defaultTo(false);
