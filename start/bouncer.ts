@@ -6,6 +6,7 @@
  */
 
 import Bouncer from "@ioc:Adonis/Addons/Bouncer";
+import User from "App/Models/User";
 
 /*
 |--------------------------------------------------------------------------
@@ -31,6 +32,12 @@ import Bouncer from "@ioc:Adonis/Addons/Bouncer";
 */
 export const { actions } = Bouncer;
 
+Bouncer.before(async (user: User | null) => {
+    if (user?.isSuperAdmin) {
+        return true;
+    }
+});
+
 /*
 |--------------------------------------------------------------------------
 | Bouncer Policies
@@ -54,4 +61,9 @@ export const { actions } = Bouncer;
 | NOTE: Always export the "policies" const from this file
 |****************************************************************
 */
-export const { policies } = Bouncer.registerPolicies({});
+export const { policies } = Bouncer.registerPolicies({
+    AuthPolicy: () => import("App/Policies/AuthPolicy"),
+    PermissionPolicy: () => import("App/Policies/PermissionPolicy"),
+    UserPolicy: () => import("App/Policies/UserPolicy"),
+    ProfilePolicy: () => import("App/Policies/ProfilePolicy"),
+});

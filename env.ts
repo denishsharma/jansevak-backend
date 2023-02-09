@@ -28,4 +28,8 @@ export default Env.rules({
     MYSQL_USER: Env.schema.string(),
     MYSQL_PASSWORD: Env.schema.string.optional(),
     MYSQL_DB_NAME: Env.schema.string(),
+
+    BULL_REDIS_HOST: Env.schema.string({ format: "host" }),
+    BULL_REDIS_PORT: Env.schema.number(),
+    BULL_REDIS_PASSWORD: Env.schema.string.optional(),
 });

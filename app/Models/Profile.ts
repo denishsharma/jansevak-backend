@@ -7,39 +7,44 @@ import Ward from "App/Models/Ward";
 
 
 export default class Profile extends compose(BaseModel, SoftDeletes) {
+import { DateTime } from "luxon";
+import { BaseModel, column, belongsTo, BelongsTo, hasOne, HasOne } from "@ioc:Adonis/Lucid/Orm";
+import User from "App/Models/User";
+import Address from "App/Models/Address";
+
+export default class Profile extends BaseModel {
     @column({ isPrimary: true })
     public id: number;
 
     @column()
-    public user_id: string;
+    public userId: number;
 
     @column()
-    public first_name: string;
-
-
-    @column()
-    public last_name: string;
+    public firstName: string | null;
 
     @column()
-    public phone: string;
+    public middleName: string | null;
 
     @column()
-    public address_id: number;
+    public lastName: string | null;
 
     @column()
-    public gender: string;
+    public aadharNumber: string | null;
 
     @column()
-    public aadhar_card_number: string;
+    public panNumber: string | null;
 
     @column()
-    public voter_id_number: string;
+    public voterIdNumber: string | null;
 
     @column()
-    public email: string;
+    public phoneNumber: string | null;
 
     @column()
-    public ward_id: number;
+    public email: string | null;
+
+    @column.dateTime()
+    public birthDate: DateTime | null;
 
     @column.dateTime({ columnName: "deleted_at" })
     public deletedAt: DateTime | null;
@@ -57,4 +62,9 @@ export default class Profile extends compose(BaseModel, SoftDeletes) {
     @hasOne(() => Ward)
     public ward: HasOne<typeof Ward>;
 
+    @belongsTo(() => User)
+    public user: BelongsTo<typeof User>;
+
+    @hasOne(() => Address)
+    public address: HasOne<typeof Address>;
 }
