@@ -23,3 +23,25 @@ import Route from "@ioc:Adonis/Core/Route";
 Route.get("/", async () => {
     return { hello: "world" };
 });
+
+Route.post("/login", "AuthController.login");
+
+Route.get("/user", async () => {
+    return "protected";
+}).middleware(["auth:jwt"]);
+
+
+Route.group(() => {
+    Route.get("/", "WardsController.index");
+    Route.post("/create", "WardsController.store");
+    Route.post("/update/:id", "WardsController.update");
+    Route.post("/delete/:id", "WardsController.destroy");
+}).prefix("/wards");
+// .middleware(["auth:jwt"]);
+
+Route.group(() => {
+    Route.get("/", "ProfilesController.index");
+    Route.post("/create", "ProfilesController.store");
+    Route.post("/update/:id", "ProfilesController.update");
+    Route.post("/delete/:id", "ProfilesController.destroy");
+}).prefix("/profiles");
