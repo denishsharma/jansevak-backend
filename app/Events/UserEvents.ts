@@ -4,8 +4,8 @@ declare module "@ioc:Adonis/Core/Event" {
     interface EventsList {
         "user:created": {
             id: number,
-            email: string,
-            phoneNumber: string,
+            email: string | null,
+            phoneNumber: string | null,
         };
     }
 }
