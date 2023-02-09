@@ -1,6 +1,6 @@
 import { DateTime } from "luxon";
 import Hash from "@ioc:Adonis/Core/Hash";
-import { BaseModel, beforeCreate, beforeSave, column, hasOne, HasOne, HasMany, hasMany, manyToMany, ManyToMany } from "@ioc:Adonis/Lucid/Orm";
+import { BaseModel, beforeCreate, beforeSave, column, hasOne, HasOne, HasMany, hasMany, manyToMany, ManyToMany, belongsTo, BelongsTo } from "@ioc:Adonis/Lucid/Orm";
 import { compose } from "@ioc:Adonis/Core/Helpers";
 import { SoftDeletes } from "@ioc:Adonis/Addons/LucidSoftDeletes";
 import { v4 as uuidv4 } from "uuid";
@@ -10,6 +10,7 @@ import Permission from "App/Models/Permission";
 import Permissions, { getPermissionNames, hasAnyPermission, hasRequiredPermission } from "App/Helpers/Permissions";
 import Profile from "App/Models/Profile";
 import { UserTypes } from "App/Helpers/Authentication";
+import Ward from "App/Models/Ward";
 
 export default class User extends compose(BaseModel, SoftDeletes) {
     @column({ isPrimary: true })
@@ -19,16 +20,19 @@ export default class User extends compose(BaseModel, SoftDeletes) {
     public uuid: string;
 
     @column()
-    public phoneNumber: string;
+    public phoneNumber: string | null;
 
     @column()
-    public email: string;
+    public email: string | null;
 
     @column({ serializeAs: null })
-    public password: string;
+    public password: string | null;
 
     @column()
     public rememberMeToken: string | null;
+
+    @column()
+    public wardId: number | null;
 
     @column()
     public isRegistered: boolean;
@@ -40,7 +44,7 @@ export default class User extends compose(BaseModel, SoftDeletes) {
     public isSuperAdmin: boolean;
 
     @column()
-    public isSetupCompleted: boolean;
+    public isSetupCompleted: boolean | null;
 
     @column({ serialize: (value: string) => UserTypes[value] })
     public userType: UserTypes;
@@ -63,14 +67,33 @@ export default class User extends compose(BaseModel, SoftDeletes) {
     @column.dateTime({ autoCreate: true, autoUpdate: true })
     public updatedAt: DateTime;
 
+    /**
+     * Get all otps.
+     * @type {HasMany<typeof Otp>}
+     */
     @hasMany(() => Otp)
     public otps: HasMany<typeof Otp>;
 
+    /**
+     * Get all permissions.
+     * @type {ManyToMany<typeof Permission>}
+     */
     @manyToMany(() => Permission, { pivotTable: "permission_user" })
     public permissions: ManyToMany<typeof Permission>;
 
+    /**
+     * Get user profile.
+     * @type {HasOne<typeof Profile>}
+     */
     @hasOne(() => Profile)
     public profile: HasOne<typeof Profile>;
+
+    /**
+     * Get ward.
+     * @type {BelongsTo<typeof Ward>}
+     */
+    @belongsTo(() => Ward)
+    public ward: BelongsTo<typeof Ward>;
 
     /**
      * Hash password before saving
@@ -79,8 +102,10 @@ export default class User extends compose(BaseModel, SoftDeletes) {
      */
     @beforeSave()
     public static async hashPassword(user: User) {
-        if (user.$dirty.password) {
-            user.password = await Hash.make(user.password);
+        if (user.password !== null) {
+            if (user.$dirty.password) {
+                user.password = await Hash.make(user.password);
+            }
         }
     }
 
@@ -117,6 +142,10 @@ export default class User extends compose(BaseModel, SoftDeletes) {
      * @returns {Promise<Otp>}
      */
     public async generateOtp(): Promise<Otp> {
+        if (this.phoneNumber === null) {
+            return Promise.reject("User does not have a phone number");
+        }
+
         let otp = await Otp.query()
             .where("user_id", this.id)
             .whereNull("deleted_at")
@@ -193,5 +222,15 @@ export default class User extends compose(BaseModel, SoftDeletes) {
      */
     public async logout(auth: any) {
         await auth.use("jwt").revoke();
+    }
+
+    /**
+     * Verify user password
+     * @param {string} password
+     * @returns {Promise<boolean>}
+     */
+    public async verifyPassword(password: string) {
+        if (this.password === null) return false;
+        return await Hash.verify(password, this.password);
     }
 }

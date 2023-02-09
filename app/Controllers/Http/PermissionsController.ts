@@ -64,7 +64,7 @@ export default class PermissionsController {
         await assignee.related("permissions").detach(permissions.map((permission) => permission.id));
     }
 
-    private async checkAuthAndAssignee(auth, request, response): Promise<{ user: User, assignee: User, permission_uuid: string[] }> {
+    private async checkAuthAndAssignee(auth: HttpContextContract["auth"], request: HttpContextContract["request"], response): Promise<{ user: User, assignee: User, permission_uuid: string[] }> {
         // check if user is authenticated
         await auth.use("jwt").authenticate();
         const user = auth.use("jwt").user;

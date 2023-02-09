@@ -1,7 +1,6 @@
 import type { HttpContextContract } from "@ioc:Adonis/Core/HttpContext";
 import Responses, { ResponseCodes } from "App/Helpers/Responses";
 import validator from "validator";
-import Hash from "@ioc:Adonis/Core/Hash";
 import User from "App/Models/User";
 
 export default class UsersController {
@@ -47,7 +46,7 @@ export default class UsersController {
         // If user is updating his own password, check if password matches
         if (userToUpdate.id === user.id) {
             // check if password matches
-            const isPasswordValid = await Hash.verify(user.password, password);
+            const isPasswordValid = await user.verifyPassword(password);
             if (!isPasswordValid) {
                 return response.status(400).json(Responses.createResponse({}, [ResponseCodes.PASSWORD_DID_NOT_MATCH], "Invalid password"));
             }

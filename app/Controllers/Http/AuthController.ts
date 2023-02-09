@@ -4,7 +4,6 @@ import Responses, { ResponseCodes } from "App/Helpers/Responses";
 import { getPermissionNames, getPermissionSet } from "App/Helpers/Permissions";
 import * as console from "console";
 import { DateTime } from "luxon";
-import Hash from "@ioc:Adonis/Core/Hash";
 import Event from "@ioc:Adonis/Core/Event";
 import validator from "validator";
 
@@ -170,7 +169,7 @@ export default class AuthController {
         // Generate JWT and send it to the user along with the user id
 
         // Check if password is valid
-        const isPasswordValid = await Hash.verify(user.password, password);
+        const isPasswordValid = await user.verifyPassword(password);
         if (!isPasswordValid) {
             return response.status(400).json(Responses.createResponse({}, [ResponseCodes.USER_NOT_AUTHENTICATED], "Invalid password"));
         }

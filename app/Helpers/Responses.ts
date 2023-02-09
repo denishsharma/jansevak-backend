@@ -27,6 +27,9 @@ export enum ResponseCodes {
     PROFILE_NOT_FOUND = 1026,
     PROFILE_SETUP_COMPLETED = 1027,
     PROFILE_DATA_MISSING = 1028,
+    DATA_NOT_FOUND = 1029,
+    SUCCESS_WITH_DATA = 2000,
+    SUCCESS_WITH_NO_DATA = 1030,
 }
 
 export default class Responses {

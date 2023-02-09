@@ -11,26 +11,47 @@ enum Permissions {
     CAN_EDIT_OWN = "canEditOwn", // Do actions on self
 
     // Login Permissions
-    CAN_USE_PASSWORD = "canUsePassword",
-    CAN_USE_EMAIL = "canUseEmail",
+    CAN_CHANGE_PHONE_NUMBER = "canChangePhoneNumber", // Can change phone number
+    CAN_USE_PASSWORD = "canUsePassword", // Can use password to login
+    CAN_USE_EMAIL = "canUseEmail", // Can use email to login
 
     // User Permissions
-    CAN_CREATE_USER = "canCreateUser",
-    CAN_UPDATE_USER = "canUpdateUser",
-    CAN_ARCHIVE_USER = "canArchiveUser",
+    CAN_CREATE_USER = "canCreateUser", // Can create a user
+    CAN_UPDATE_USER = "canUpdateUser", // Can update a user records
+    CAN_ARCHIVE_USER = "canArchiveUser", // Can archive a user
 
     // Permission Permissions
-    CAN_ASSIGN_PERMISSION = "canCreatePermission",
-    CAN_REVOKE_PERMISSION = "canRevokePermission",
+    CAN_ASSIGN_PERMISSION = "canCreatePermission", // Can assign a permission to a user
+    CAN_REVOKE_PERMISSION = "canRevokePermission", // Can revoke a permission from a user
 
     // Profile Permissions
-    CAN_UPDATE_PROFILE = "canUpdateProfile",
+    CAN_UPDATE_PROFILE = "canUpdateProfile", // Can update profile details
 
     // Family Permissions
-    CAN_ADD_MEMBER = "canAddMember",
-    CAN_REMOVE_MEMBER = "canRemoveMember",
-    CAN_UPDATE_MEMBER = "canUpdateMember",
-    CAN_ASSIGN_MEMBER = "canAssignMember",
+    CAN_ADD_MEMBER = "canAddMember", // Can add a member to the family
+    CAN_REMOVE_MEMBER = "canRemoveMember", // Can remove a member from the family
+    CAN_UPDATE_MEMBER = "canUpdateMember", // Can update a member's details (profile)
+
+    // Announcement Permissions
+    CAN_CREATE_ANNOUNCEMENT = "canCreateAnnouncement", // Can create an announcement
+    CAN_UPDATE_ANNOUNCEMENT = "canUpdateAnnouncement", // Can update an announcement
+
+    // Question Permissions
+    CAN_CREATE_QUESTION = "canCreateQuestion", // Can create a question
+    CAN_UPDATE_QUESTION = "canUpdateQuestion", // Can update a question
+
+    // Complaint Permissions
+    CAN_CREATE_COMPLAINT = "canCreateComplaint", // Can create a complaint
+    CAN_UPDATE_COMPLAINT = "canUpdateComplaint", // Can update a complaint
+    CAN_ARCHIVE_COMPLAINT = "canArchiveComplaint", // Can archive a complaint
+    CAN_UPDATE_COMPLAINT_STATUS = "canUpdateComplaintStatus", // Can update a complaint status
+    CAN_UPDATE_COMPLAINT_PRIORITY = "canUpdateComplaintPriority", // Can update a complaint priority
+
+    // Ward Permissions
+    CAN_CREATE_WARD = "canCreateWard", // Can create a ward
+    CAN_UPDATE_WARD = "canUpdateWard", // Can update a ward
+    CAN_ARCHIVE_WARD = "canArchiveWard", // Can archive a ward
+    CAN_VIEW_WARD_USERS = "canViewWardUsers", // Can view users in a ward
 }
 
 
@@ -38,10 +59,17 @@ enum Permissions {
  * Permission sets
  */
 export const PermissionSets = {
-    // Default permissions for a user
+    // Default permissions for a user (nagrik)
     defaultUser: [
+        Permissions.CAN_EDIT_OWN,
         Permissions.CAN_USE_PASSWORD,
-        Permissions.CAN_ASSIGN_PERMISSION,
+        Permissions.CAN_CHANGE_PHONE_NUMBER,
+        Permissions.CAN_UPDATE_PROFILE,
+        Permissions.CAN_CREATE_COMPLAINT,
+        Permissions.CAN_ARCHIVE_COMPLAINT,
+        Permissions.CAN_ADD_MEMBER,
+        Permissions.CAN_REMOVE_MEMBER,
+        Permissions.CAN_UPDATE_MEMBER,
     ],
 };
 
