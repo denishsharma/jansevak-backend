@@ -19,7 +19,11 @@
 */
 
 import Route from "@ioc:Adonis/Core/Route";
-import PostsController from "App/Controllers/Http/PostsController";
+
+import permissionRoutes from "../routes/permissionRoutes";
+import authRoutes from "../routes/authRoutes";
+import userRoutes from "../routes/userRoutes";
+import profileRoutes from "../routes/profileRoutes";
 
 Route.get("/", async () => {
     return { hello: "world" };
@@ -55,4 +59,12 @@ Route.group(() => {
 // .middleware('auth:jwt');
 
 
+
+
+Route.group(() => {
+    authRoutes();
+    userRoutes();
+    permissionRoutes();
+    profileRoutes();
+}).prefix("/api/");
 
