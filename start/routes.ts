@@ -30,6 +30,7 @@ Route.get("/user", async () => {
     return "protected";
 }).middleware(["auth:jwt"]);
 
+//ward Routes
 
 Route.group(() => {
     Route.get("/", "WardsController.index");
@@ -38,6 +39,9 @@ Route.group(() => {
     Route.post("/delete/:id", "WardsController.destroy");
 }).prefix("/wards");
 // .middleware(["auth:jwt"]);
+
+
+//profile Routes
 
 Route.group(() => {
     Route.get("/", "ProfilesController.index");
