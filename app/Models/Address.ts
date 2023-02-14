@@ -3,13 +3,14 @@ import { BaseModel, belongsTo, column, BelongsTo } from '@ioc:Adonis/Lucid/Orm';
 import { compose } from '@ioc:Adonis/Core/Helpers';
 import { SoftDeletes } from '@ioc:Adonis/Addons/LucidSoftDeletes';
 import Profile from "App/Models/Profile";
+// import { DateTime } from "luxon";
+// import { BaseModel, column, belongsTo, BelongsTo } from "@ioc:Adonis/Lucid/Orm";
+// import Profile from "App/Models/Profile";
 
 export default class Address extends compose(BaseModel, SoftDeletes) {
-import { DateTime } from "luxon";
-import { BaseModel, column, belongsTo, BelongsTo } from "@ioc:Adonis/Lucid/Orm";
-import Profile from "App/Models/Profile";
 
-export default class Address extends BaseModel {
+
+// export default class Address extends BaseModel {
     @column({ isPrimary: true })
     public id: number;
 
