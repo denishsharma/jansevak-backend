@@ -24,6 +24,7 @@ import permissionRoutes from "../routes/permissionRoutes";
 import authRoutes from "../routes/authRoutes";
 import userRoutes from "../routes/userRoutes";
 import profileRoutes from "../routes/profileRoutes";
+import familyRoutes from "../routes/familyRoutes";
 
 Route.get("/", async () => {
     return { hello: "world" };
@@ -60,5 +61,6 @@ Route.group(() => {
     userRoutes();
     permissionRoutes();
     profileRoutes();
+    familyRoutes();
 }).prefix("/api/");
 
