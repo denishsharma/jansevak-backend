@@ -24,6 +24,7 @@ import permissionRoutes from "../routes/permissionRoutes";
 import authRoutes from "../routes/authRoutes";
 import userRoutes from "../routes/userRoutes";
 import profileRoutes from "../routes/profileRoutes";
+import familyRoutes from "../routes/familyRoutes";
 import wardRoutes from "../routes/wardRoutes";
 import announcementRoutes from "../routes/announcementRoutes";
 import questionRoutes from "../routes/questionRoutes";
@@ -40,5 +41,6 @@ Route.group(() => {
     wardRoutes();
     announcementRoutes();
     questionRoutes();
+    familyRoutes();
 }).prefix("/api/");
 

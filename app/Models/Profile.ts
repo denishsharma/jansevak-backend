@@ -32,6 +32,12 @@ export default class Profile extends BaseModel {
     public voterIdNumber: string | null;
 
     @column()
+    public phoneNumber: string | null;
+
+    @column()
+    public gender: string | null;
+
+    @column()
     public email: string | null;
 
     @column()
