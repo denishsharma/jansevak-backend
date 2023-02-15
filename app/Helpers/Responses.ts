@@ -30,6 +30,7 @@ export enum ResponseCodes {
     DATA_NOT_FOUND = 1029,
     SUCCESS_WITH_DATA = 2000,
     SUCCESS_WITH_NO_DATA = 1030,
+    UNKNOWN_ERROR = 1031,
 }
 
 export default class Responses {
