@@ -11,13 +11,13 @@ export default class WardsController {
      * @param response
      */
     public async index({ response }: HttpContextContract) {
-        const wards = await Ward.all();
+        const wards = await Ward.query().select("name", "code");
 
-        if (wards && wards.length > 0) {
-            return response.status(200).send(Responses.createResponse(wards, [ResponseCodes.SUCCESS_WITH_DATA], "Wards found"));
+        if (!wards || wards.length < 1) {
+            return response.status(404).send(Responses.createResponse({}, [ResponseCodes.DATA_NOT_FOUND], "Wards not found"));
         }
 
-        return response.status(404).send(Responses.createResponse({}, [ResponseCodes.DATA_NOT_FOUND], "Wards not found"));
+        return response.status(200).send(Responses.createResponse(wards, [ResponseCodes.SUCCESS_WITH_DATA], "Wards found"));
     }
 
     /**
@@ -55,7 +55,9 @@ export default class WardsController {
             code: slugify(`${name} ${string.generateRandom(4)}`, { lower: true, strict: true }),
         });
 
-        return response.status(201).send(Responses.createResponse(ward, [ResponseCodes.SUCCESS_WITH_DATA], "Ward created"));
+        return response.status(201).send(Responses.createResponse(ward.serialize({
+            fields: { pick: ["name", "code"] },
+        }), [ResponseCodes.SUCCESS_WITH_DATA], "Ward created"));
     }
 
     /**
@@ -94,8 +96,19 @@ export default class WardsController {
         }
 
         // load ward users
-        await ward.load("users");
-        return response.status(200).send(Responses.createResponse(ward, [ResponseCodes.SUCCESS_WITH_DATA], "Ward users found"));
+        await ward.load("users", (userQuery) => {
+            userQuery.preload("profile");
+        });
+
+        return response.status(200).send(Responses.createResponse(ward.serialize({
+            fields: { pick: ["name", "code"] },
+            relations: {
+                users: {
+                    fields: { pick: ["uuid", "phone_number"] },
+                    relations: { profile: { fields: ["avatar_url", "first_name", "middle_name", "last_name", "email", "full_name", "initials_and_last_name"] } },
+                },
+            },
+        }), [ResponseCodes.SUCCESS_WITH_DATA], "Ward users found"));
     }
 
     /**
@@ -135,6 +148,15 @@ export default class WardsController {
 
         // update ward
         const wardIsAlreadyArchived = ward.deletedAt !== null;
+
+        // check if ward is already archived or restored
+        if (is_archived && wardIsAlreadyArchived) {
+            return response.status(400).send(Responses.createResponse({}, [ResponseCodes.INVALID_REQUEST], "Ward already archived"));
+        } else if (!is_archived && !wardIsAlreadyArchived) {
+            return response.status(400).send(Responses.createResponse({}, [ResponseCodes.INVALID_REQUEST], "Ward already restored"));
+        }
+
+        // archive or restore ward
         if (is_archived && !wardIsAlreadyArchived) {
             await ward.delete();
             return response.status(200).send(Responses.createResponse({}, [ResponseCodes.SUCCESS_WITH_NO_DATA], "Ward archived"));
