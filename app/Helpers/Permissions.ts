@@ -35,6 +35,7 @@ enum Permissions {
     // Announcement Permissions
     CAN_CREATE_ANNOUNCEMENT = "canCreateAnnouncement", // Can create an announcement
     CAN_UPDATE_ANNOUNCEMENT = "canUpdateAnnouncement", // Can update an announcement
+    CAN_ARCHIVE_ANNOUNCEMENT = "canArchiveAnnouncement", // Can archive an announcement
 
     // Question Permissions
     CAN_CREATE_QUESTION = "canCreateQuestion", // Can create a question
