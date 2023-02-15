@@ -7,5 +7,5 @@ export default function permissionRoutes() {
         });
 
         Route.post("/assign", "PermissionsController.assignPermissionToUser");
-    }).prefix("/permissions");
+    }).prefix("/permission");
 }
