@@ -1,9 +1,14 @@
-import { DateTime } from 'luxon';
-import { BaseModel, column } from '@ioc:Adonis/Lucid/Orm';
+import { DateTime } from "luxon";
+import { compose } from "@ioc:Adonis/Core/Helpers";
+import { BaseModel, column } from "@ioc:Adonis/Lucid/Orm";
+import { SoftDeletes } from "@ioc:Adonis/Addons/LucidSoftDeletes";
 
-export default class Question extends BaseModel {
+export default class Question extends compose(BaseModel, SoftDeletes) {
     @column({ isPrimary: true })
     public id: number;
+
+    @column()
+    public slug: string;
 
     @column()
     public question: string;
@@ -11,7 +16,7 @@ export default class Question extends BaseModel {
     @column()
     public answer: string;
 
-    @column.dateTime({ columnName: 'deleted_at' })
+    @column.dateTime({ columnName: "deleted_at" })
     public deletedAt: DateTime | null;
 
     @column.dateTime({ autoCreate: true })
