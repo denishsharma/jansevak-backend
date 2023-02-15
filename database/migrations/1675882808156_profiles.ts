@@ -18,6 +18,7 @@ export default class extends BaseSchema {
 
             table.string("email", 255).nullable();
             table.timestamp("birth_date").nullable();
+            table.string("avatar").nullable();
 
             table.timestamp("deleted_at").nullable();
 
