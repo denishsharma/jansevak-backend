@@ -24,6 +24,10 @@ import permissionRoutes from "../routes/permissionRoutes";
 import authRoutes from "../routes/authRoutes";
 import userRoutes from "../routes/userRoutes";
 import profileRoutes from "../routes/profileRoutes";
+import announcementsRoutes from "../routes/announcementRoutes";
+import questionRoutes from "../routes/questionRoutes";
+import complaintRoutes from "../routes/complaintRoutes";
+import complaint_statusRoutes from "../routes/complaint_statusRoutes";
 
 Route.get("/", async () => {
     return { hello: "world" };
@@ -31,21 +35,6 @@ Route.get("/", async () => {
 
 Route.group(() => {
 
-    Route.group(() => {
-        Route.get('/', 'AnnouncementsController.index');
-        Route.post('/', 'AnnouncementsController.store');
-        Route.get('/:id', 'AnnouncementsController.show');
-        Route.post('update/:id', 'AnnouncementsController.update');
-        Route.post('delete/:id', 'AnnouncementsController.destroy');
-    }).prefix('announcements');
-
-    Route.group(() => {
-        Route.get('/', 'QuestionsController.index');
-        Route.post('/', 'QuestionsController.store');
-        Route.get('/:id', 'QuestionsController.show');
-        Route.post('update/:id', 'QuestionsController.update');
-        Route.post('delete/:id', 'QuestionsController.destroy');
-    }).prefix('question');
 
     Route.group(() => {
         Route.get('/', 'PostsController.index');
@@ -66,5 +55,10 @@ Route.group(() => {
     userRoutes();
     permissionRoutes();
     profileRoutes();
+    announcementsRoutes();
+    questionRoutes();
+    complaintRoutes();
+    complaint_statusRoutes();
+
 }).prefix("/api/");
 
