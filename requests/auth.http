@@ -1,0 +1,43 @@
+### Login using phone number
+POST https://{{host}}:{{port}}/api/auth/login
+Content-Type: application/json
+
+{
+    "phone_number": "8355892633"
+}
+
+### Login using email
+POST https://{{host}}:{{port}}/api/auth/login
+Content-Type: application/json
+
+{
+    "email": "denish@mail.com",
+    "password": "123456",
+    "mode": "email"
+}
+
+### Login using password
+POST https://{{host}}:{{port}}/api/auth/login
+Content-Type: application/json
+
+{
+    "phone_number": "8355892633",
+    "password": "123456"
+}
+
+### Verify OTP
+POST https://{{host}}:{{port}}/api/auth/verify
+Content-Type: application/json
+
+{
+    "user_uuid": "",
+    "otp": ""
+}
+
+### Genereate OTP
+POST https://{{host}}:{{port}}/api/auth/generate-otp
+Content-Type: application/json
+
+{
+    "user_uuid": ""
+}

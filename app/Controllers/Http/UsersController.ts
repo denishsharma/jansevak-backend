@@ -4,6 +4,13 @@ import validator from "validator";
 import User from "App/Models/User";
 
 export default class UsersController {
+    /**
+     * Update user password
+     * @param auth
+     * @param request
+     * @param response
+     * @param bouncer
+     */
     public async updatePassword({ auth, request, response, bouncer }: HttpContextContract) {
         // check if user is authenticated
         await auth.use("jwt").authenticate();
@@ -58,6 +65,12 @@ export default class UsersController {
         return response.status(200).json(Responses.createResponse({}, [ResponseCodes.PASSWORD_RESET_DONE, ResponseCodes.USER_UPDATED], "Password reset done"));
     }
 
+    /**
+     * Update user email
+     * @param auth
+     * @param request
+     * @param response
+     */
     public async updateEmail({ auth, request, response }: HttpContextContract) {
         // check if user is authenticated
         await auth.use("jwt").authenticate();

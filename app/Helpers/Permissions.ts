@@ -27,10 +27,10 @@ enum Permissions {
     // Profile Permissions
     CAN_UPDATE_PROFILE = "canUpdateProfile", // Can update profile details
 
-    // Family Permissions
-    CAN_ADD_MEMBER = "canAddMember", // Can add a member to the family
-    CAN_REMOVE_MEMBER = "canRemoveMember", // Can remove a member from the family
-    CAN_UPDATE_MEMBER = "canUpdateMember", // Can update a member's details (profile)
+    // Group Permissions
+    CAN_CREATE_GROUP = "canCreateGroup", // Can create a group (general)
+    CAN_ADD_USER_TO_GROUP = "canAddUserToGroup", // Can add a user to a group (general)
+    CAN_ADD_FAMILY_MEMBER_TO_GROUP = "canAddFamilyMemberToGroup", // Can add a family member to a group (family)
 
     // Announcement Permissions
     CAN_CREATE_ANNOUNCEMENT = "canCreateAnnouncement", // Can create an announcement
@@ -68,9 +68,6 @@ export const PermissionSets = {
         Permissions.CAN_UPDATE_PROFILE,
         Permissions.CAN_CREATE_COMPLAINT,
         Permissions.CAN_ARCHIVE_COMPLAINT,
-        Permissions.CAN_ADD_MEMBER,
-        Permissions.CAN_REMOVE_MEMBER,
-        Permissions.CAN_UPDATE_MEMBER,
     ],
 };
 

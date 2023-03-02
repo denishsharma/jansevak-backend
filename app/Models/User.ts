@@ -11,6 +11,7 @@ import Permissions, { getPermissionNames, hasAnyPermission, hasRequiredPermissio
 import Profile from "App/Models/Profile";
 import { UserTypes } from "App/Helpers/Authentication";
 import Ward from "App/Models/Ward";
+import Group from "App/Models/Group";
 
 export default class User extends compose(BaseModel, SoftDeletes) {
     @column({ isPrimary: true })
@@ -94,6 +95,15 @@ export default class User extends compose(BaseModel, SoftDeletes) {
      */
     @belongsTo(() => Ward)
     public ward: BelongsTo<typeof Ward>;
+
+    /**
+     * Get all groups.
+     */
+    @manyToMany(() => Group, {
+        pivotTable: "group_user",
+        pivotColumns: ["added_by"],
+    })
+    public groups: ManyToMany<typeof Group>;
 
     /**
      * Hash password before saving

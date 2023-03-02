@@ -7,5 +7,5 @@ export default function questionRoutes() {
         Route.post("/create", "QuestionController.create");
         Route.post("/update", "QuestionController.update");
         Route.post("/archive", "QuestionController.archive");
-    }).prefix("/announcement");
+    }).prefix("/question");
 }
