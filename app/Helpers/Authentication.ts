@@ -2,9 +2,9 @@ import { HttpContextContract } from "@ioc:Adonis/Core/HttpContext";
 import * as console from "console";
 
 export enum UserTypes {
-    ADMIN = "admin",
-    JANSEVAK = "jansevak",
-    NAGRIK = "nagrik",
+    ADMIN = <any>"admin",
+    JANSEVAK = <any>"jansevak",
+    NAGRIK = <any>"nagrik",
 }
 
 /**

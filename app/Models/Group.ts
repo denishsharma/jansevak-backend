@@ -22,6 +22,9 @@ export default class Group extends BaseModel {
     @column()
     public userId: number;
 
+    @column()
+    public createdBy: number;
+
     @column.dateTime({ columnName: "deleted_at" })
     public deletedAt: DateTime;
 

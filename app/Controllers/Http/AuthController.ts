@@ -6,6 +6,7 @@ import * as console from "console";
 import { DateTime } from "luxon";
 import Event from "@ioc:Adonis/Core/Event";
 import validator from "validator";
+import { getLoggedInUser, UserTypes } from "App/Helpers/Authentication";
 
 export default class AuthController {
 
@@ -13,7 +14,7 @@ export default class AuthController {
         const { phone_number, mode, email, password } = request.only(["phone_number", "mode", "email", "password"]);
 
         // Check if phone number is provided and mode is empty
-        if (!phone_number && !mode) {
+        if (!phone_number || phone_number.trim() === "") {
             return response.status(400).json(Responses.createResponse({}, [ResponseCodes.PHONE_NUMBER_NOT_PROVIDED], "Phone number not provided"));
         }
 
@@ -40,7 +41,7 @@ export default class AuthController {
         // If user does not exist, create a new user
         if (!user) {
             // Create a new user
-            user = await User.create({ phoneNumber: phone_number });
+            user = await User.create({ phoneNumber: phone_number, userType: UserTypes.NAGRIK });
             user.related("permissions").sync(await getPermissionSet("defaultUser"));
             await user.save();
 
@@ -49,7 +50,7 @@ export default class AuthController {
         }
 
         // Check if user is verified and mode is not empty
-        if (user.isRegistered && mode) {
+        if (user.isRegistered && mode === "email" || mode === "password") {
             // Check if password is provided
             if (!password) {
                 return response.status(400).json(Responses.createResponse({}, [ResponseCodes.PASSWORD_NOT_PROVIDED], "Password not provided"));
@@ -182,5 +183,16 @@ export default class AuthController {
             [ResponseCodes.USER_LOGGED_IN],
             "User logged in successfully",
         ));
+    }
+
+    public async me({ response, auth }: HttpContextContract) {
+        // check if user is authenticated
+        const user = await getLoggedInUser(auth);
+
+        if (!user) {
+            return response.status(401).send(Responses.createResponse({}, [ResponseCodes.USER_NOT_AUTHENTICATED], "User not authenticated"));
+        }
+
+        return response.status(200).send(Responses.createResponse(user, [ResponseCodes.SUCCESS_WITH_DATA], "Fetched authenticated user data."));
     }
 }

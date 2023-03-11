@@ -1,7 +1,7 @@
-import Profile from 'App/Models/Profile';
-import Factory from '@ioc:Adonis/Lucid/Factory';
+import Profile from "App/Models/Profile";
+import Factory from "@ioc:Adonis/Lucid/Factory";
 
-export default Factory.define(Profile, ({ faker }) => {
+export default Factory.define(Profile, () => {
     return {
         //
     };

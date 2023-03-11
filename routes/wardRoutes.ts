@@ -6,5 +6,6 @@ export default function wardRoutes() {
         Route.post("/create", "WardsController.create");
         Route.post("/get-users", "WardsController.getUsers");
         Route.post("/archive", "WardsController.archive");
+        Route.get("/post-office-list/:pincode", "PostOfficesController.show");
     }).prefix("/ward");
 }

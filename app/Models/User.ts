@@ -14,7 +14,7 @@ import Ward from "App/Models/Ward";
 import Group from "App/Models/Group";
 
 export default class User extends compose(BaseModel, SoftDeletes) {
-    @column({ isPrimary: true })
+    @column({ isPrimary: true, serializeAs: null })
     public id: number;
 
     @column()
@@ -32,19 +32,19 @@ export default class User extends compose(BaseModel, SoftDeletes) {
     @column()
     public rememberMeToken: string | null;
 
-    @column()
+    @column({ serializeAs: null })
     public wardId: number | null;
 
-    @column()
+    @column({ serialize: (value?: Number) => Boolean(value) })
     public isRegistered: boolean;
 
-    @column()
+    @column({ serialize: (value?: Number) => Boolean(value) })
     public isArchived: boolean;
 
-    @column()
+    @column({ serializeAs: null })
     public isSuperAdmin: boolean;
 
-    @column()
+    @column({ serialize: (value?: Number) => Boolean(value) })
     public isSetupCompleted: boolean | null;
 
     @column({ serialize: (value: string) => UserTypes[value] })
