@@ -1,19 +1,15 @@
 import BaseSchema from '@ioc:Adonis/Lucid/Schema';
 
 export default class extends BaseSchema {
-    protected tableName = 'complaints';
+    protected tableName = 'complaint_categories';
 
     public async up() {
         this.schema.createTable(this.tableName, (table) => {
             table.increments('id');
 
-            table.text('subject');
-            table.text('description', 'longtext');
-            table.integer('category_id').unsigned().notNullable();
-            table.integer('created_by').unsigned().notNullable();
-            table.integer('jansevak_id').unsigned().notNullable();
-            table.timestamp('deleted_at').nullable();
+            table.string('category').notNullable();
 
+            table.timestamp('deleted_at').nullable();
             table.timestamp('created_at', { useTz: true });
             table.timestamp('updated_at', { useTz: true });
         });
