@@ -5,5 +5,7 @@ export default Factory.define(question, ({ faker }) => {
     return {
         question: faker.lorem.sentence(),
         answer: faker.lorem.paragraph(),
+
+
     };
 }).build();

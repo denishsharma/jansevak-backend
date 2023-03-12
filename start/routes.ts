@@ -28,6 +28,8 @@ import announcementsRoutes from "../routes/announcementRoutes";
 import questionRoutes from "../routes/questionRoutes";
 import complaintRoutes from "../routes/complaintRoutes";
 import complaint_statusRoutes from "../routes/complaint_statusRoutes";
+import complaint_categoryRoutes from "../routes/complaint_categoryRoutes";
+import complaint_usersRoutes from "../routes/complaint_usersRoutes";
 
 Route.get("/", async () => {
     return { hello: "world" };
@@ -59,6 +61,8 @@ Route.group(() => {
     questionRoutes();
     complaintRoutes();
     complaint_statusRoutes();
+    complaint_categoryRoutes();
+    complaint_usersRoutes();
 
 }).prefix("/api/");
 
