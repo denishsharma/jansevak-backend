@@ -7,46 +7,41 @@ export default class ComplaintsController {
     }
 
     public async store({ request, response }: HttpContextContract) {
-        //check if user is loged in
-
-        //check if user has permission to create complaint
-        const { subject, description } = request.only(['subject', 'description']);
-        //check if subject and content are not empty
-        if (!subject || !description) {
-            return response.status(404).json({ message: 'Title or content not found' });
+        const {
+            subject, description, category_id, created_by, jansevak_id
+        } = request.only(['subject', 'description', 'category_id', 'created_by', 'jansevak_id']);
+        if (!subject || !description || !category_id || !created_by || !jansevak_id) {
+            return response.status(404).json({ message: 'Complaint not found' });
         }
-
-        return await Complaint.create({ subject, description });
-
+        return await Complaint.create({ subject, description, category_id, created_by, jansevak_id });
     }
 
     public async show({ params }: HttpContextContract) {
-        //check if user is loged in
         return await Complaint.findOrFail(params.id);
     }
 
-    public async update({ params, request, response }: HttpContextContract) {
-        //check if user is loged in
-        //check if user is admin
-        const { subject, description } = request.only(['subject', 'description']);
-        const complaint = await Complaint.findBy('id', params.id);
-        //check if subject and content are not empty
-        if (!complaint) {
+    public async update({ request, response, params }: HttpContextContract) {
+        const complaint = await Complaint.findOrFail(params.id);
+        const {
+            subject, description, category_id, created_by, jansevak_id
+        } = request.only(['subject', 'description', 'category_id', 'created_by', 'jansevak_id']);
+        if (!subject || !description || !category_id || !created_by || !jansevak_id) {
             return response.status(404).json({ message: 'Complaint not found' });
         }
-        complaint.merge({ subject, description });
+        complaint.subject = subject;
+        complaint.description = description;
+        complaint.category_id = category_id;
+        complaint.created_by = created_by;
+        complaint.jansevak_id = jansevak_id;
         await complaint.save();
         return complaint;
+
     }
 
     public async destroy({ params }: HttpContextContract) {
-        //check if user is loged in
-        //check if user is admin
-        const complaint = await Complaint.findBy('id', params.id);
-        if (!complaint) {
-            return { message: 'Complaint not found' };
-        }
+        const complaint = await Complaint.findOrFail(params.id);
         await complaint.delete();
         return complaint;
+
     }
 }
