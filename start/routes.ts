@@ -28,6 +28,9 @@ import familyRoutes from "../routes/familyRoutes";
 import wardRoutes from "../routes/wardRoutes";
 import announcementRoutes from "../routes/announcementRoutes";
 import questionRoutes from "../routes/questionRoutes";
+import queryRoutes from "../routes/queryRoutes";
+import certRoutes from "../routes/certRoutes";
+import groupRoutes from "../routes/groupRoutes";
 
 Route.get("/", async () => {
     return { hello: "world" };
@@ -42,5 +45,8 @@ Route.group(() => {
     announcementRoutes();
     questionRoutes();
     familyRoutes();
+    queryRoutes();
+    certRoutes();
+    groupRoutes();
 }).prefix("/api/");
 

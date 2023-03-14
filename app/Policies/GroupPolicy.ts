@@ -5,6 +5,10 @@ import Group from "App/Models/Group";
 import { GroupTypes } from "App/Helpers/Groups";
 
 export default class GroupPolicy extends BasePolicy {
+    public async canWriteExistingMemberToFamily(user: User) {
+        return user.isVerified && user.isRegistered && user.isSetupCompleted;
+    }
+
     /**
      * Check if user can create a general group
      * @param user

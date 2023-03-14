@@ -4,12 +4,13 @@ import { userHasPermissions } from "App/Helpers/Permissions";
 import Announcement from "App/Models/Announcement";
 
 export default class AnnouncementPolicy extends BasePolicy {
+
     /**
-     * Check if the user can create an announcement
+     * Check if the user can write the announcement
      * @param user
      */
-    public async canCreateAnnouncement(user: User) {
-        return await userHasPermissions(["CAN_CREATE_ANNOUNCEMENT"], user);
+    public async canWriteAnnouncement(user: User) {
+        return await userHasPermissions(["WRITE_ANNOUNCEMENT"], user);
     }
 
     /**

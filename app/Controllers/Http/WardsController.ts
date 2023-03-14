@@ -13,9 +13,8 @@ export default class WardsController {
     public async index({ response }: HttpContextContract) {
         const wards = await Ward.query().select("name", "code");
 
-        if (!wards || wards.length < 1) {
-            return response.status(404).send(Responses.createResponse({}, [ResponseCodes.DATA_NOT_FOUND], "Wards not found"));
-        }
+        // check if wards exist
+        if (!wards || wards.length < 1) return Responses.sendNotFoundResponse(response, "Wards not found");
 
         return response.status(200).send(Responses.createResponse(wards, [ResponseCodes.SUCCESS_WITH_DATA], "Wards found"));
     }
@@ -30,24 +29,17 @@ export default class WardsController {
     public async create({ request, auth, bouncer, response }: HttpContextContract) {
         // check if user is authenticated
         const user = await getLoggedInUser(auth);
-
-        if (!user) {
-            return response.status(401).send(Responses.createResponse({}, [ResponseCodes.USER_NOT_AUTHENTICATED], "User not authenticated"));
-        }
+        if (!user) return Responses.sendUnauthenticatedResponse(response);
 
         // check if user is authorized to create ward
-        const allows = await bouncer.forUser(user).with("WardPolicy").allows("canCreateWard");
-        if (!allows) {
-            return response.status(403).send(Responses.createResponse({}, [ResponseCodes.USER_NOT_AUTHORIZED], "User not authorized"));
-        }
+        const allows = await bouncer.forUser(user).with("WardPolicy").allows("canWriteWard");
+        if (!allows) return Responses.sendUnauthorizedResponse(response);
 
         // get ward name from request
         const { name } = request.only(["name"]);
 
         // check if ward name is provided
-        if (!name) {
-            return response.status(400).send(Responses.createResponse({}, [ResponseCodes.INVALID_REQUEST], "Invalid request"));
-        }
+        if (!name) return Responses.sendInvalidRequestResponse(response, "Ward name is required");
 
         // create ward and return response
         const ward = await Ward.create({
@@ -61,6 +53,43 @@ export default class WardsController {
     }
 
     /**
+     * Update ward
+     * @param request
+     * @param auth
+     * @param bouncer
+     * @param response
+     */
+    public async update({ request, auth, bouncer, response }: HttpContextContract) {
+        // check if user is authenticated
+        const user = await getLoggedInUser(auth);
+        if (!user) return Responses.sendUnauthenticatedResponse(response);
+
+        // check if user is authorized to update ward
+        const allows = await bouncer.forUser(user).with("WardPolicy").allows("canWriteWard");
+        if (!allows) return Responses.sendUnauthorizedResponse(response);
+
+        // get ward name and code from request
+        const { name, code } = request.only(["name", "code"]);
+
+        // check if ward name and code is provided
+        if (!name || !code) return Responses.sendInvalidRequestResponse(response, "Ward name and code is required");
+
+        // check if ward exists
+        const ward = await Ward.findBy("code", code);
+
+        // check if ward exists
+        if (!ward) return Responses.sendNotFoundResponse(response, "Ward not found");
+
+        // update ward and return response
+        ward.name = name;
+        await ward.save();
+
+        return response.status(200).send(Responses.createResponse(ward.serialize({
+            fields: { pick: ["name", "code"] },
+        }), [ResponseCodes.SUCCESS_WITH_DATA], "Ward updated"));
+    }
+
+    /**
      * Get ward users
      * @param response
      * @param auth
@@ -70,30 +99,19 @@ export default class WardsController {
     public async getUsers({ response, auth, bouncer, request }: HttpContextContract) {
         // check if user is authenticated
         const user = await getLoggedInUser(auth);
-
-        if (!user) {
-            return response.status(401).send(Responses.createResponse({}, [ResponseCodes.USER_NOT_AUTHENTICATED], "User not authenticated"));
-        }
-
-        // check if ward code is provided
-        const { ward_code } = request.only(["ward_code"]);
-
-        if (!ward_code) {
-            return response.status(400).send(Responses.createResponse({}, [ResponseCodes.INVALID_REQUEST], "Invalid request"));
-        }
-
-        // check if ward exists
-        const ward = await Ward.findBy("code", ward_code);
-
-        if (!ward) {
-            return response.status(404).send(Responses.createResponse({}, [ResponseCodes.DATA_NOT_FOUND], "Ward not found"));
-        }
+        if (!user) return Responses.sendUnauthenticatedResponse(response);
 
         // check if user is authorized to view ward users
         const allows = await bouncer.forUser(user).with("WardPolicy").allows("canViewWardUsers");
-        if (!allows) {
-            return response.status(400).send(Responses.createResponse({}, [ResponseCodes.USER_NOT_AUTHORIZED], "User not authorized to view ward users"));
-        }
+        if (!allows) return Responses.sendUnauthorizedResponse(response);
+
+        // check if ward code is provided
+        const { ward_code } = request.only(["ward_code"]);
+        if (!ward_code) return Responses.sendInvalidRequestResponse(response, "Ward code is required");
+
+        // check if ward exists
+        const ward = await Ward.findBy("code", ward_code);
+        if (!ward) return Responses.sendNotFoundResponse(response, "Ward not found");
 
         // load ward users
         await ward.load("users", (userQuery) => {
@@ -121,48 +139,30 @@ export default class WardsController {
     public async archive({ response, auth, bouncer, request }: HttpContextContract) {
         // check if user is authenticated
         const user = await getLoggedInUser(auth);
+        if (!user) return Responses.sendUnauthenticatedResponse(response);
 
-        if (!user) {
-            return response.status(401).send(Responses.createResponse({}, [ResponseCodes.USER_NOT_AUTHENTICATED], "User not authenticated"));
-        }
-
-        // check if user is authorized to archive ward
-        const allows = await bouncer.forUser(user).with("WardPolicy").allows("canArchiveWard");
-        if (!allows) {
-            return response.status(403).send(Responses.createResponse({}, [ResponseCodes.USER_NOT_AUTHORIZED], "User not authorized"));
-        }
+        // check if user is authorized to create ward
+        const allows = await bouncer.forUser(user).with("WardPolicy").allows("canWriteWard");
+        if (!allows) return Responses.sendUnauthorizedResponse(response);
 
         // check if ward code is provided
-        const { ward_code, is_archived } = request.only(["ward_code", "is_archived"]);
+        const { ward_code } = request.only(["ward_code"]);
+        const { unarchive } = request.qs();
 
-        if (!ward_code || is_archived === undefined) {
-            return response.status(400).send(Responses.createResponse({}, [ResponseCodes.INVALID_REQUEST], "Invalid request"));
-        }
+        // check if ward code is provided
+        if (!ward_code || !ward_code.trim()) return Responses.sendInvalidRequestResponse(response, "Ward code is required");
 
         // check if ward exists
         const ward = await Ward.withTrashed().where("code", ward_code).first();
+        if (!ward) return Responses.sendNotFoundResponse(response, "Ward not found");
 
-        if (!ward) {
-            return response.status(404).send(Responses.createResponse({}, [ResponseCodes.DATA_NOT_FOUND], "Ward not found"));
-        }
-
-        // update ward
-        const wardIsAlreadyArchived = ward.deletedAt !== null;
-
-        // check if ward is already archived or restored
-        if (is_archived && wardIsAlreadyArchived) {
-            return response.status(400).send(Responses.createResponse({}, [ResponseCodes.INVALID_REQUEST], "Ward already archived"));
-        } else if (!is_archived && !wardIsAlreadyArchived) {
-            return response.status(400).send(Responses.createResponse({}, [ResponseCodes.INVALID_REQUEST], "Ward already restored"));
-        }
-
-        // archive or restore ward
-        if (is_archived && !wardIsAlreadyArchived) {
-            await ward.delete();
-            return response.status(200).send(Responses.createResponse({}, [ResponseCodes.SUCCESS_WITH_NO_DATA], "Ward archived"));
-        } else if (!is_archived && wardIsAlreadyArchived) {
+        // check for unarchive flag
+        if (unarchive) {
             await ward.restore();
             return response.status(200).send(Responses.createResponse({}, [ResponseCodes.SUCCESS_WITH_NO_DATA], "Ward restored"));
+        } else {
+            await ward.delete();
+            return response.status(200).send(Responses.createResponse({}, [ResponseCodes.SUCCESS_WITH_NO_DATA], "Ward archived"));
         }
     }
 }

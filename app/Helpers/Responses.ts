@@ -1,3 +1,5 @@
+import { HttpContextContract } from "@ioc:Adonis/Core/HttpContext";
+
 export enum ResponseCodes {
     PHONE_NUMBER_ALREADY_EXISTS = 1001,
     PHONE_NUMBER_NOT_PROVIDED = 1002,
@@ -31,6 +33,9 @@ export enum ResponseCodes {
     SUCCESS_WITH_DATA = 2000,
     SUCCESS_WITH_NO_DATA = 1030,
     UNKNOWN_ERROR = 1031,
+    PROFILE_SETUP_NOT_COMPLETED = 1032,
+    VALIDATION_ERROR = 1033,
+    INVALID_CERTIFICATE = 1034,
 }
 
 export default class Responses {
@@ -42,5 +47,29 @@ export default class Responses {
             ...(codes && { codes: _codes }),
             ...(message && { message }),
         };
+    }
+
+    public static sendUnauthenticatedResponse(response: HttpContextContract["response"]) {
+        return response.status(401).send(Responses.createResponse({}, [ResponseCodes.USER_NOT_AUTHENTICATED], "User not authenticated"));
+    }
+
+    public static sendUnauthorizedResponse(response: HttpContextContract["response"], message: string = "User not authorized") {
+        return response.status(403).send(Responses.createResponse({}, [ResponseCodes.USER_NOT_AUTHORIZED], message));
+    }
+
+    public static sendInvalidRequestResponse(response: HttpContextContract["response"], message: string = "Invalid request") {
+        return response.status(400).send(Responses.createResponse({}, [ResponseCodes.INVALID_REQUEST], message));
+    }
+
+    public static sendNotFoundResponse(response: HttpContextContract["response"], message: string = "Data not found") {
+        return response.status(404).send(Responses.createResponse({}, [ResponseCodes.DATA_NOT_FOUND], message));
+    }
+
+    public static sendServerErrorResponse(response: HttpContextContract["response"], message: string = "Something went wrong") {
+        return response.status(500).send(Responses.createResponse({}, [ResponseCodes.UNKNOWN_ERROR], message));
+    }
+
+    public static sendInvalidCertificateResponse(response: HttpContextContract["response"], message: string = "Invalid certificate") {
+        return response.status(400).send(Responses.createResponse({}, [ResponseCodes.INVALID_CERTIFICATE], message));
     }
 }

@@ -8,7 +8,11 @@ export default class extends BaseSchema {
             table.increments("id");
 
             table.string("otp", 255).notNullable();
-            table.bigInteger("user_id").unsigned();
+            table.string("phone_number", 255).nullable();
+            table.bigInteger("user_id").unsigned().nullable();
+
+            table.string("type", 255).nullable();
+            table.json("payload").nullable();
 
             table.timestamp("expires_at").notNullable();
             table.timestamp("deleted_at").nullable();

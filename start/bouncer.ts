@@ -70,4 +70,5 @@ export const { policies } = Bouncer.registerPolicies({
     AnnouncementPolicy: () => import("App/Policies/AnnouncementPolicy"),
     QuestionPolicy: () => import("App/Policies/QuestionPolicy"),
     GroupPolicy: () => import("App/Policies/GroupPolicy"),
+    QueryPolicy: () => import("App/Policies/QueryPolicy"),
 });

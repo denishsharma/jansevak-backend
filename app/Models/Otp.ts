@@ -1,6 +1,7 @@
 import { DateTime } from "luxon";
 import { belongsTo, BelongsTo, BaseModel, column } from "@ioc:Adonis/Lucid/Orm";
 import User from "App/Models/User";
+import { OtpTypes } from "App/Helpers/Authentication";
 
 export default class Otp extends BaseModel {
     @column({ isPrimary: true })
@@ -11,6 +12,15 @@ export default class Otp extends BaseModel {
 
     @column()
     public userId: number;
+
+    @column()
+    public phoneNumber: string | null;
+
+    @column({ serialize: (value: OtpTypes) => value && OtpTypes[value] })
+    public type: OtpTypes;
+
+    @column()
+    public payload: string | null;
 
     @column.dateTime()
     public expiresAt: DateTime;
@@ -26,4 +36,12 @@ export default class Otp extends BaseModel {
 
     @belongsTo(() => User)
     public user: BelongsTo<typeof User>;
+
+
+    /**
+     * Check if the otp is expired
+     */
+    public isExpired() {
+        return this.expiresAt < DateTime.now();
+    }
 }

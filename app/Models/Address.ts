@@ -1,27 +1,22 @@
-import { DateTime } from 'luxon';
-import { BaseModel, belongsTo, column, BelongsTo } from '@ioc:Adonis/Lucid/Orm';
-import { compose } from '@ioc:Adonis/Core/Helpers';
-import { SoftDeletes } from '@ioc:Adonis/Addons/LucidSoftDeletes';
+import { DateTime } from "luxon";
+import { BaseModel, belongsTo, column, BelongsTo } from "@ioc:Adonis/Lucid/Orm";
 import Profile from "App/Models/Profile";
-// import { DateTime } from "luxon";
-// import { BaseModel, column, belongsTo, BelongsTo } from "@ioc:Adonis/Lucid/Orm";
-// import Profile from "App/Models/Profile";
 
-export default class Address extends compose(BaseModel, SoftDeletes) {
+export default class Address extends BaseModel {
 
 
 // export default class Address extends BaseModel {
-    @column({ isPrimary: true })
+    @column({ isPrimary: true, serializeAs: null })
     public id: number;
 
-    @column()
+    @column({ serializeAs: null })
     public profileId: number;
 
     @column()
-    public addressLine1: string;
+    public addressLineOne: string;
 
     @column()
-    public addressLine2: string;
+    public addressLineTwo: string;
 
     @column()
     public district: string;
@@ -37,6 +32,7 @@ export default class Address extends compose(BaseModel, SoftDeletes) {
 
     @column()
     public pincode: string;
+
     @column.dateTime({ columnName: "deleted_at" })
     public deletedAt: DateTime | null;
 

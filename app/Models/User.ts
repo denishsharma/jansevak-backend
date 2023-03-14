@@ -1,6 +1,6 @@
 import { DateTime } from "luxon";
 import Hash from "@ioc:Adonis/Core/Hash";
-import { BaseModel, beforeCreate, beforeSave, column, hasOne, HasOne, HasMany, hasMany, manyToMany, ManyToMany, belongsTo, BelongsTo } from "@ioc:Adonis/Lucid/Orm";
+import { BaseModel, beforeCreate, beforeSave, column, HasMany, hasMany, hasOne, HasOne, manyToMany, ManyToMany } from "@ioc:Adonis/Lucid/Orm";
 import { compose } from "@ioc:Adonis/Core/Helpers";
 import { SoftDeletes } from "@ioc:Adonis/Addons/LucidSoftDeletes";
 import { v4 as uuidv4 } from "uuid";
@@ -9,9 +9,11 @@ import Event from "@ioc:Adonis/Core/Event";
 import Permission from "App/Models/Permission";
 import Permissions, { getPermissionNames, hasAnyPermission, hasRequiredPermission } from "App/Helpers/Permissions";
 import Profile from "App/Models/Profile";
-import { UserTypes } from "App/Helpers/Authentication";
-import Ward from "App/Models/Ward";
+import { OtpTypes, UserTypes } from "App/Helpers/Authentication";
 import Group from "App/Models/Group";
+import UserQuery from "App/Models/UserQuery";
+import UserAllocation from "App/Models/UserAllocation";
+import { GroupTypes } from "App/Helpers/Groups";
 
 export default class User extends compose(BaseModel, SoftDeletes) {
     @column({ isPrimary: true, serializeAs: null })
@@ -19,6 +21,9 @@ export default class User extends compose(BaseModel, SoftDeletes) {
 
     @column()
     public uuid: string;
+
+    @column()
+    public fid: string;
 
     @column()
     public phoneNumber: string | null;
@@ -29,11 +34,8 @@ export default class User extends compose(BaseModel, SoftDeletes) {
     @column({ serializeAs: null })
     public password: string | null;
 
-    @column()
-    public rememberMeToken: string | null;
-
     @column({ serializeAs: null })
-    public wardId: number | null;
+    public rememberMeToken: string | null;
 
     @column({ serialize: (value?: Number) => Boolean(value) })
     public isRegistered: boolean;
@@ -46,6 +48,9 @@ export default class User extends compose(BaseModel, SoftDeletes) {
 
     @column({ serialize: (value?: Number) => Boolean(value) })
     public isSetupCompleted: boolean | null;
+
+    @column({ serialize: (value?: Number) => Boolean(value) })
+    public isVerified: boolean;
 
     @column({ serialize: (value: string) => UserTypes[value] })
     public userType: UserTypes;
@@ -67,6 +72,9 @@ export default class User extends compose(BaseModel, SoftDeletes) {
 
     @column.dateTime({ autoCreate: true, autoUpdate: true })
     public updatedAt: DateTime;
+
+    @hasOne(() => UserAllocation, { foreignKey: "userId" })
+    public allocation: HasOne<typeof UserAllocation>;
 
     /**
      * Get all otps.
@@ -90,11 +98,23 @@ export default class User extends compose(BaseModel, SoftDeletes) {
     public profile: HasOne<typeof Profile>;
 
     /**
-     * Get ward.
-     * @type {BelongsTo<typeof Ward>}
+     * Get all queries created by me.
      */
-    @belongsTo(() => Ward)
-    public ward: BelongsTo<typeof Ward>;
+    @hasMany(() => UserQuery, { foreignKey: "created_by" })
+    public myCreatedQueries: HasMany<typeof UserQuery>;
+
+    /**
+     * Get all queries created on behalf of me.
+     */
+    @hasMany(() => UserQuery, { foreignKey: "on_behalf_of" })
+    public queriesCreatedOnBehalfOfMe: HasMany<typeof UserQuery>;
+
+    /**
+     * Get all queries assigned to me.
+     */
+    @hasMany(() => UserQuery, { foreignKey: "for_jansevak" })
+    public assignedQueriesToMe: HasMany<typeof UserQuery>;
+
 
     /**
      * Get all groups.
@@ -104,6 +124,20 @@ export default class User extends compose(BaseModel, SoftDeletes) {
         pivotColumns: ["added_by"],
     })
     public groups: ManyToMany<typeof Group>;
+
+    /**
+     * Family group created by me. (Not the one I am a member of)
+     */
+    @hasOne(() => Group, {
+        onQuery: (query) => query.where("type", GroupTypes.FAMILY).whereNull("deleted_at"),
+    })
+    public familyGroup: HasOne<typeof Group>;
+
+    /**
+     * Get all groups I have created.
+     */
+    @hasMany(() => Group)
+    public myGroups: HasMany<typeof Group>;
 
     /**
      * Hash password before saving
@@ -127,6 +161,21 @@ export default class User extends compose(BaseModel, SoftDeletes) {
     @beforeCreate()
     public static async generateUuid(user: User) {
         user.uuid = uuidv4();
+    }
+
+    @beforeCreate()
+    public static async generateFid(user: User) {
+        if (user.phoneNumber && user.isRegistered) {
+            user.fid = String(Math.floor(Math.random() * 1000000000));
+        }
+    }
+
+    /**
+     * Get all queries created by me or on behalf of me.
+     * @returns {Promise<UserQuery[]>}
+     */
+    public async myQueries(): Promise<UserQuery[]> {
+        return await UserQuery.query().where("created_by", this.id).orWhere("on_behalf_of", this.id);
     }
 
     /**
@@ -158,6 +207,7 @@ export default class User extends compose(BaseModel, SoftDeletes) {
 
         let otp = await Otp.query()
             .where("user_id", this.id)
+            .where("type", OtpTypes.AUTH)
             .whereNull("deleted_at")
             .where("expires_at", ">=", DateTime.fromSeconds(DateTime.now().toSeconds()).toString())
             .first();
@@ -166,6 +216,8 @@ export default class User extends compose(BaseModel, SoftDeletes) {
             const otp_number = Math.floor(100000 + Math.random() * 900000);
             otp = await Otp.create({
                 otp: otp_number.toString(),
+                phoneNumber: this.phoneNumber,
+                type: OtpTypes.AUTH,
                 userId: this.id,
                 expiresAt: DateTime.fromSeconds(DateTime.now().toSeconds()).plus({ minutes: 5 }),
             });
@@ -188,6 +240,7 @@ export default class User extends compose(BaseModel, SoftDeletes) {
     public async verifyOtp(otp: string) {
         const otps = await Otp.query()
             .where("user_id", this.id)
+            .where("type", OtpTypes.AUTH)
             .where("otp", otp)
             .whereNull("deleted_at")
             .where("expires_at", ">=", DateTime.fromSeconds(DateTime.now().toSeconds()).toString())

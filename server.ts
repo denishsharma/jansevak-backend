@@ -15,12 +15,9 @@ import "reflect-metadata";
 import sourceMapSupport from "source-map-support";
 import { Ignitor } from "@adonisjs/core/build/standalone";
 // import { readFileSync } from "fs";
-import console from "console";
 
 // const key = readFileSync(`${__dirname}/ssl/private.key`);
 // const cert = readFileSync(`${__dirname}/ssl/certificate.crt`);
-
-console.log(__dirname);
 
 sourceMapSupport.install({ handleUncaughtExceptions: false });
 

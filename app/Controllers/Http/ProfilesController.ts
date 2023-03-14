@@ -1,112 +1,128 @@
 import type { HttpContextContract } from "@ioc:Adonis/Core/HttpContext";
+import { getLoggedInUser } from "App/Helpers/Authentication";
 import Responses, { ResponseCodes } from "App/Helpers/Responses";
+import console from "console";
+import { rules, schema, validator } from "@ioc:Adonis/Core/Validator";
+import ValidationException from "App/Exceptions/ValidationException";
+import { UpdateProfileDataInterface, UpdateProfileDataSchema } from "App/Helpers/Validators";
 import User from "App/Models/User";
-import { UserTypes } from "App/Helpers/Authentication";
 
 export default class ProfilesController {
-    public async updateProfile({ auth, request, response, params, bouncer }: HttpContextContract) {
-        // Check if the user is authenticated
-        await auth.use("jwt").authenticate();
-        const user = auth.use("jwt").user;
+    public async updateProfile({ auth, request, response, params }: HttpContextContract) {
+        // check if user is authenticated
+        const user = await getLoggedInUser(auth);
+        if (!user) return Responses.sendUnauthenticatedResponse(response);
 
-        if (!user) {
-            return response.status(401).json(Responses.createResponse({}, [ResponseCodes.USER_NOT_AUTHENTICATED], "User not authenticated"));
+        // check if user is authorized to create new nagarik
+        /* Write Logic Here */
+
+        const { id: user_id } = params;
+
+        if (!user_id) {
+            return response.status(400).json(Responses.createResponse({}, [ResponseCodes.INVALID_REQUEST], "User ID not provided"));
         }
 
-        // Get the user to update
-        let userToUpdate: User;
-        const { userToUpdateId } = params;
+        // get required data
+        const { user: _userRaw, profile: _profileRaw } = request.only(["user", "profile"]);
+        console.log(_userRaw, _profileRaw);
+        const [_user, _profile] = [_userRaw, _profileRaw].map((raw) => JSON.parse(raw));
+        const _avatar = request.file("avatar");
 
-        if (userToUpdateId) {
-            const _userToUpdate = await User.findBy("uuid", userToUpdateId);
-
-            // Check if user to update exists
-            if (!_userToUpdate) {
-                return response.status(404).json(Responses.createResponse({}, [ResponseCodes.USER_NOT_FOUND], "User not found"));
-            }
-
-            userToUpdate = _userToUpdate;
-        } else {
-            // If the user to update is not specified, then update the authenticated user
-            userToUpdate = user;
+        // validate request with validator and schema
+        let validatedData: UpdateProfileDataInterface;
+        try {
+            validatedData = await validator.validate({
+                schema: schema.create(UpdateProfileDataSchema),
+                data: {
+                    user: _user,
+                    profile: _profile,
+                    avatar: _avatar,
+                },
+            });
+        } catch (e) {
+            throw new ValidationException(e.message, e.messages);
         }
 
-        // Check if the user is authorized to update the profile
-        const allows = await bouncer.forUser(user).with("ProfilePolicy").allows("canUpdateProfile", userToUpdate);
-        if (!allows) {
-            return response.status(403).json(Responses.createResponse({}, [ResponseCodes.USER_NOT_AUTHORIZED], "User not authorized"));
+        console.log(validatedData);
+    }
+
+    public async showProfile({ response, auth, params }: HttpContextContract) {
+        // check if user is authenticated
+        const user = await getLoggedInUser(auth);
+        if (!user) return Responses.sendUnauthenticatedResponse(response);
+
+        const { id: user_id } = params;
+
+        let validatedData;
+        try {
+            validatedData = await validator.validate({
+                schema: schema.create({
+                    user_id: schema.string.optional({ trim: true }, [rules.uuid(), rules.exists({
+                        table: "users",
+                        column: "uuid",
+                    })]),
+                }),
+                data: { user_id },
+                messages: {
+                    required: "User ID is required",
+                    "user_id.uuid": "User ID is not a valid UUID",
+                    "user_id.exists": "User ID does not exist",
+                },
+                reporter: validator.reporters.api,
+            });
+        } catch (e) {
+            throw new ValidationException(e.message, e.messages);
         }
 
-        // Load the profile and address of the user to update
-        await userToUpdate.load("profile");
+        const _userToFetch = validatedData.user_id || user.uuid;
+        let _user = user;
 
-        // Get the profile data from the request
-        const {
-            first_name,
-            middle_name,
-            last_name,
-            aadhar_number,
-            pan_number,
-            voter_id_number,
-            email,
-            birth_date,
+        if (_userToFetch !== user.uuid) {
+            // check if user is authorized to fetch profile of other user
+            /* Write Logic Here */
 
-            // Address
-            address_line_1,
-            address_line_2,
-            district,
-            city,
-            state,
-            pincode,
-        } = request.only(["first_name", "middle_name", "last_name", "aadhar_number", "pan_number", "voter_id_number", "email", "birth_date", "address_line_1", "address_line_2", "district", "city", "state", "pincode"]);
-
-        // Update the profile and address
-        const profile = user.profile;
-        await profile.load("address");
-
-        const address = profile.address;
-
-        if (!userToUpdate.isSetupCompleted && userToUpdate.userType !== UserTypes.ADMIN) {
-            if (!first_name || !last_name || !email || !birth_date || !address_line_1 || !district || !city || !state || !pincode) {
-                return response.status(400).json(Responses.createResponse({}, [ResponseCodes.PROFILE_DATA_MISSING], "Profile data missing"));
-            }
+            const __user = await User.query().where("uuid", _userToFetch).first();
+            if (!__user) return Responses.sendNotFoundResponse(response);
+            _user = __user;
         }
 
-        await address.merge({
-            addressLine1: address_line_1,
-            addressLine2: address_line_2,
-            district,
-            city,
-            state,
-            pincode,
-        }).save();
+        // fetch user's allocation
+        await _user.load("allocation", (query) => {
+            query.preload("allocatedToUser", (query) => {
+                query.preload("profile");
+            });
+        });
 
-        await profile.merge({
-            firstName: first_name,
-            middleName: middle_name,
-            lastName: last_name,
-            aadharNumber: aadhar_number,
-            panNumber: pan_number,
-            voterIdNumber: voter_id_number,
-            email,
-            birthDate: birth_date,
-        }).save();
+        // fetch user's profile
+        await _user.load("profile", (query) => {
+            query.preload("address");
+        });
 
-        const codes: ResponseCodes[] = [];
-        let message: string;
-
-        // Check if the profile setup is completed
-        if (userToUpdate.isSetupCompleted) {
-            codes.push(ResponseCodes.PROFILE_UPDATED);
-            message = "Profile updated";
-        } else {
-            // If the profile setup is not completed, then mark it as completed
-            userToUpdate.isSetupCompleted = true;
-            await userToUpdate.save();
-            codes.push(ResponseCodes.PROFILE_SETUP_COMPLETED);
-            message = "Profile setup completed";
-        }
-
-        return response.status(200).json(Responses.createResponse({}, codes, message));
+        return response.status(200).json(Responses.createResponse(_user.serialize({
+            fields: { omit: ["deleted_at", "updated_at", "email_verified_at"] },
+            relations: {
+                allocation: {
+                    fields: { omit: ["deleted_at", "created_at", "updated_at"] },
+                    relations: {
+                        allocatedToUser: {
+                            fields: { pick: ["uuid", "fid", "user_type"] },
+                            relations: {
+                                profile: {
+                                    fields: { pick: ["first_name", "middle_name", "last_name", "gender", "email", "full_name", "avatar_url", "initials_and_last_name"] },
+                                },
+                            },
+                        },
+                    },
+                },
+                profile: {
+                    fields: { omit: ["deleted_at", "created_at", "updated_at"] },
+                    relations: {
+                        address: {
+                            fields: { omit: ["deleted_at", "created_at", "updated_at"] },
+                        },
+                    },
+                },
+            },
+        }), [ResponseCodes.SUCCESS_WITH_DATA], "Profile fetched successfully"));
     }
 }

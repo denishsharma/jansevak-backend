@@ -8,8 +8,8 @@ export default class extends BaseSchema {
             table.increments("id");
             table.integer("profile_id").unsigned();
 
-            table.string("address_line_1", 255).nullable();
-            table.string("address_line_2", 255).nullable();
+            table.string("address_line_one", 255).nullable();
+            table.string("address_line_two", 255).nullable();
             table.string("district", 255).nullable();
             table.string("city", 255).nullable();
             table.string("state", 255).nullable();

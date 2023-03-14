@@ -1,10 +1,13 @@
 import { DateTime } from "luxon";
-import { BaseModel, column, manyToMany, ManyToMany } from "@ioc:Adonis/Lucid/Orm";
+import { compose } from "@ioc:Adonis/Core/Helpers";
+import { BaseModel, column, manyToMany, ManyToMany, beforeCreate, belongsTo, BelongsTo } from "@ioc:Adonis/Lucid/Orm";
+import { SoftDeletes } from "@ioc:Adonis/Addons/LucidSoftDeletes";
 import { GroupTypes } from "App/Helpers/Groups";
 import User from "App/Models/User";
+import { v4 as uuidv4 } from "uuid";
 
-export default class Group extends BaseModel {
-    @column({ isPrimary: true })
+export default class Group extends compose(BaseModel, SoftDeletes) {
+    @column({ isPrimary: true, serializeAs: null })
     public id: number;
 
     @column()
@@ -19,11 +22,8 @@ export default class Group extends BaseModel {
     @column({ serialize: (value) => value && GroupTypes[value] })
     public type: GroupTypes;
 
-    @column()
+    @column({ serializeAs: null })
     public userId: number;
-
-    @column()
-    public createdBy: number;
 
     @column.dateTime({ columnName: "deleted_at" })
     public deletedAt: DateTime;
@@ -34,6 +34,9 @@ export default class Group extends BaseModel {
     @column.dateTime({ autoCreate: true, autoUpdate: true })
     public updatedAt: DateTime;
 
+    @belongsTo(() => User, { foreignKey: "userId" })
+    public createdBy: BelongsTo<typeof User>;
+
     /**
      * Get all users.
      */
@@ -42,4 +45,9 @@ export default class Group extends BaseModel {
         pivotColumns: ["added_by"],
     })
     public users: ManyToMany<typeof User>;
+
+    @beforeCreate()
+    public static async generateUuid(group: Group) {
+        group.uuid = uuidv4();
+    }
 }

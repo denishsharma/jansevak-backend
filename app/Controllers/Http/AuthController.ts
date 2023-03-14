@@ -9,33 +9,34 @@ import validator from "validator";
 import { getLoggedInUser, UserTypes } from "App/Helpers/Authentication";
 
 export default class AuthController {
-
     public async login({ request, bouncer, response, auth }: HttpContextContract) {
         const { phone_number, mode, email, password } = request.only(["phone_number", "mode", "email", "password"]);
 
         // Check if phone number is provided and mode is empty
-        if (!phone_number || phone_number.trim() === "") {
-            return response.status(400).json(Responses.createResponse({}, [ResponseCodes.PHONE_NUMBER_NOT_PROVIDED], "Phone number not provided"));
-        }
+        if (!phone_number || phone_number.trim() === "") return Responses.sendInvalidRequestResponse(response, "Phone number not provided");
 
         // Find user by phone number
-        let user = await User.findBy("phone_number", phone_number);
+        let user;
 
         // Check if mode is email and find user by email
         if (mode === "email") {
             // Check if email is provided
-            if (!email) {
-                return response.status(400).json(Responses.createResponse({}, [ResponseCodes.EMAIL_NOT_PROVIDED], "Email not provided"));
-            }
-
-            // Check if email is valid
-            if (!validator.isEmail(email)) {
-                return response.status(400).json(Responses.createResponse({}, [ResponseCodes.BAD_INPUT], "Invalid email"));
-            }
+            if (!email) return Responses.sendInvalidRequestResponse(response, "Email not provided");
+            if (!validator.isEmail(email)) return Responses.sendInvalidRequestResponse(response, "Invalid email");
 
             // Find user by email
             user = await User.findBy("email", email);
+            if (!user) return response.status(400).json(Responses.createResponse({}, [ResponseCodes.USER_NOT_FOUND], "User not found"));
+
+        } else {
+            // Check if mode is password and find user by phone number
+            if (mode === "password" && !password) return Responses.sendInvalidRequestResponse(response, "Password not provided");
+
+            // Find user by phone number
+            user = await User.findBy("phone_number", phone_number);
         }
+
+        let returnResponses: ResponseCodes[] = [];
 
         // Check if user exists
         // If user does not exist, create a new user
@@ -45,12 +46,14 @@ export default class AuthController {
             user.related("permissions").sync(await getPermissionSet("defaultUser"));
             await user.save();
 
+            returnResponses.push(ResponseCodes.USER_CREATED);
+
             // Send user created event
             await Event.emit("user:created", { id: user.id, email: user.email, phoneNumber: user.phoneNumber });
         }
 
         // Check if user is verified and mode is not empty
-        if (user.isRegistered && mode === "email" || mode === "password") {
+        if (user.isRegistered && (mode === "email" || mode === "password")) {
             // Check if password is provided
             if (!password) {
                 return response.status(400).json(Responses.createResponse({}, [ResponseCodes.PASSWORD_NOT_PROVIDED], "Password not provided"));
@@ -79,15 +82,15 @@ export default class AuthController {
             }
         }
 
-        // Generate OTP and send it to the user
-        await user.generateOtp();
+        if (mode === "otp") {
+            // Generate OTP and send it to the user
+            await user.generateOtp();
+        }
+
+        returnResponses.push(ResponseCodes.OTP_SENT);
 
         return response.status(200).json(Responses.createResponse(
-            {
-                user: { id: user.uuid },
-            },
-            [ResponseCodes.OTP_SENT, ResponseCodes.USER_CREATED],
-            "OTP sent to your phone number",
+            { user: { id: user.uuid } }, returnResponses, "OTP sent to your phone number",
         ));
     }
 
@@ -95,24 +98,14 @@ export default class AuthController {
         const { otp, user_uuid } = request.only(["otp", "user_uuid"]);
 
         // Check if OTP and user id are provided
-        if (!otp || !user_uuid) {
-            return response.status(400).json(Responses.createResponse({}, [ResponseCodes.INVALID_REQUEST], "OTP or user UUID not provided"));
-        }
+        if (!otp || !user_uuid) return Responses.sendInvalidRequestResponse(response, "OTP or user id not provided");
 
         const user = await User.findBy("uuid", user_uuid);
-
-        // Check if user exists
-        if (!user) {
-            return response.status(400).json(Responses.createResponse({}, [ResponseCodes.USER_NOT_FOUND], "User not found"));
-        }
+        if (!user) return response.status(400).json(Responses.createResponse({}, [ResponseCodes.USER_NOT_FOUND], "User not found"));
 
         // Verify OTP
         const isOtpValid = await user.verifyOtp(otp);
-
-        // Check if OTP is valid
-        if (!isOtpValid) {
-            return response.status(400).json(Responses.createResponse({}, [ResponseCodes.INVALID_OTP], "Invalid OTP"));
-        }
+        if (!isOtpValid) return response.status(400).json(Responses.createResponse({}, [ResponseCodes.INVALID_OTP], "Invalid OTP"));
 
         let codes: ResponseCodes[] = [];
         let message = "User verified and logged in successfully";
@@ -125,6 +118,7 @@ export default class AuthController {
             await user.merge({
                 isRegistered: true,
                 registeredAt: DateTime.now(),
+                fid: user.fid || String(Math.floor(Math.random() * 1000000000)),
             }).save();
 
             codes.push(ResponseCodes.USER_VERIFIED);
@@ -149,21 +143,55 @@ export default class AuthController {
         const { user_uuid } = request.only(["user_uuid"]);
 
         // Check if user uuid is provided
-        if (!user_uuid) {
-            return response.status(400).json(Responses.createResponse({}, [ResponseCodes.INVALID_REQUEST], "User UUID not provided"));
-        }
-
-        const user = await User.findBy("uuid", user_uuid);
+        if (!user_uuid) return Responses.sendInvalidRequestResponse(response, "User id not provided");
 
         // Check if user exists
-        if (!user) {
-            return response.status(400).json(Responses.createResponse({}, [ResponseCodes.USER_NOT_FOUND], "User not found"));
-        }
+        const user = await User.findBy("uuid", user_uuid);
+        if (!user) return response.status(400).json(Responses.createResponse({}, [ResponseCodes.USER_NOT_FOUND], "User not found"));
 
         // Generate OTP and send it to the user
         await user.generateOtp();
 
         return response.status(200).json(Responses.createResponse({}, [ResponseCodes.OTP_SENT], "OTP sent to your phone number"));
+    }
+
+    public async me({ response, auth }: HttpContextContract) {
+        // check if user is authenticated
+        const user = await getLoggedInUser(auth);
+        if (!user) return Responses.sendUnauthenticatedResponse(response);
+
+        // load user profile
+        await user.load("profile", (query) => {
+            query.preload("address");
+        });
+
+        // load user allocation
+        await user.load("allocation", (query) => {
+            query.preload("allocatedToUser", (query) => {
+                query.preload("profile");
+            });
+            query.preload("wardUser");
+        });
+
+        return response.status(200).send(Responses.createResponse(user.serialize({
+            fields: { pick: ["uuid", "fid", "phone_number", "email", "is_setup_completed", "is_verified", "user_type"] },
+            relations: {
+                profile: {
+                    fields: { pick: ["first_name", "last_name", "full_name", "initials_and_last_name", "avatar_url"] },
+                    relations: { address: { fields: { omit: ["deleted_at", "created_at", "updated_at"] } } },
+                },
+                allocation: {
+                    fields: { pick: ["allocatedToUser", "ward"] },
+                    relations: {
+                        allocatedToUser: {
+                            fields: { pick: ["uuid", "fid", "email", "user_type"] },
+                            relations: { profile: { fields: { pick: ["first_name", "last_name", "full_name", "initials_and_last_name", "avatar_url"] } } },
+                        },
+                        ward: { fields: { pick: ["name", "code"] } },
+                    },
+                },
+            },
+        }), [ResponseCodes.SUCCESS_WITH_DATA], "Fetched authenticated user data."));
     }
 
     private async loginWithPassword(auth, response, user: User, password: string) {
@@ -183,16 +211,5 @@ export default class AuthController {
             [ResponseCodes.USER_LOGGED_IN],
             "User logged in successfully",
         ));
-    }
-
-    public async me({ response, auth }: HttpContextContract) {
-        // check if user is authenticated
-        const user = await getLoggedInUser(auth);
-
-        if (!user) {
-            return response.status(401).send(Responses.createResponse({}, [ResponseCodes.USER_NOT_AUTHENTICATED], "User not authenticated"));
-        }
-
-        return response.status(200).send(Responses.createResponse(user, [ResponseCodes.SUCCESS_WITH_DATA], "Fetched authenticated user data."));
     }
 }

@@ -1,4 +1,4 @@
 export enum GroupTypes {
-    FAMILY = "family",
-    GENERAL = "general",
+    FAMILY = <any>"family",
+    GENERAL = <any>"general",
 }

@@ -6,7 +6,7 @@ import User from "App/Models/User";
 import Profile from "App/Models/Profile";
 
 export default class Ward extends compose(BaseModel, SoftDeletes) {
-    @column({ isPrimary: true })
+    @column({ isPrimary: true, serializeAs: null })
     public id: number;
 
     @column()
