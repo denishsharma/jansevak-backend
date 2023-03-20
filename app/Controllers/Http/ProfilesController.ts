@@ -1,16 +1,22 @@
 import type { HttpContextContract } from "@ioc:Adonis/Core/HttpContext";
-import { getLoggedInUser } from "App/Helpers/Authentication";
+import { getLoggedInUser, UserTypes } from "App/Helpers/Authentication";
 import Responses, { ResponseCodes } from "App/Helpers/Responses";
 import console from "console";
 import { rules, schema, validator } from "@ioc:Adonis/Core/Validator";
 import ValidationException from "App/Exceptions/ValidationException";
-import { UpdateProfileDataInterface, UpdateProfileDataSchema } from "App/Helpers/Validators";
+import { ProfileDataInterface, ProfileDataSchema, UpdateProfileDataInterface, UpdateProfileDataSchema, UserDataSchema } from "App/Helpers/Validators";
 import User from "App/Models/User";
+import Ward from "App/Models/Ward";
+import Drive from "@ioc:Adonis/Core/Drive";
+import UnknownErrorException from "App/Exceptions/UnknownErrorException";
+import Attachment from "App/Models/Attachment";
+import { PolymorphicType } from "App/Helpers/Polymorphism";
+import Profile from "App/Models/Profile";
 
 export default class ProfilesController {
     public async updateProfile({ auth, request, response, params }: HttpContextContract) {
         // check if user is authenticated
-        const user = await getLoggedInUser(auth);
+        let user = await getLoggedInUser(auth);
         if (!user) return Responses.sendUnauthenticatedResponse(response);
 
         // check if user is authorized to create new nagarik
@@ -24,7 +30,6 @@ export default class ProfilesController {
 
         // get required data
         const { user: _userRaw, profile: _profileRaw } = request.only(["user", "profile"]);
-        console.log(_userRaw, _profileRaw);
         const [_user, _profile] = [_userRaw, _profileRaw].map((raw) => JSON.parse(raw));
         const _avatar = request.file("avatar");
 
@@ -43,7 +48,165 @@ export default class ProfilesController {
             throw new ValidationException(e.message, e.messages);
         }
 
-        console.log(validatedData);
+        // get user to update
+        const _userToUpdate = await User.query().where("uuid", user_id).first();
+        if (_userToUpdate) user = _userToUpdate;
+
+        // update user profile data
+        const _profileData = {
+            firstName: validatedData.profile.first_name,
+            lastName: validatedData.profile.last_name,
+            aadharNumber: validatedData.profile.aadhar_number,
+            voterIdNumber: validatedData.profile.voter_id_number,
+            gender: validatedData.profile.gender,
+            email: validatedData.profile.email,
+            birthDate: validatedData.profile.birth_date,
+        };
+
+        // get user profile
+        const profile = await user.related("profile").query().preload("address").first();
+        if (!profile) return Responses.sendNotFoundResponse(response, "Profile not found");
+
+        if (profile) {
+            profile.merge(_profileData);
+            await profile.save();
+        }
+
+        // update profile address if provided
+        if (validatedData.profile.address) {
+            const _addressData = {
+                addressLineOne: validatedData.profile.address.address_line_1,
+                addressLineTwo: validatedData.profile.address.address_line_2,
+                district: validatedData.profile.address.district,
+                state: validatedData.profile.address.state,
+                city: validatedData.profile.address.city,
+                pincode: validatedData.profile.address.pincode,
+            };
+
+            if (profile.address) {
+                profile.address.merge(_addressData);
+                await profile.address.save();
+            }
+        }
+
+        // check if avatar is provided
+        if (validatedData.avatar) {
+            await this.updateProfileAvatar(profile, { avatar: validatedData.avatar });
+        }
+
+        // get user allocation
+        const allocation = await user.related("allocation").query().first();
+
+        // update user allocation data
+        if (validatedData.user && allocation) {
+            // update user ward
+            if (validatedData.user.ward) {
+                const ward = await Ward.query().where("code", validatedData.user.ward).first();
+                if (ward) {
+                    allocation.wardId = ward.id;
+                    await allocation.save();
+                }
+            }
+
+            // update jansevak
+            if (validatedData.user.jansevak) {
+                const jansevak = await User.query().where("uuid", validatedData.user.jansevak).first();
+                if (jansevak) {
+                    allocation.allocatedTo = jansevak.id;
+                    await allocation.save();
+                }
+            }
+        }
+
+        return response.status(200).json(Responses.createResponse(validatedData, [], "Profile updated successfully"));
+    }
+
+    public async setupProfile({ auth, request, response }: HttpContextContract) {
+        // check if user is authenticated
+        const user = await getLoggedInUser(auth);
+        if (!user) return Responses.sendUnauthenticatedResponse(response);
+
+        // check if user is authorized to setup profile
+        /* Write Logic Here */
+
+        // get required data
+        const { user: _userRaw, profile: _profileRaw } = request.only(["user", "profile"]);
+        const [_user, _profile] = [_userRaw, _profileRaw].map((raw) => JSON.parse(raw));
+        const _avatar = request.file("avatar");
+
+        // validate request with validator and schema
+        let validatedData;
+        try {
+            validatedData = await validator.validate({
+                schema: schema.create({
+                    user: schema.object().members({
+                        ward: schema.string({}, [rules.exists({ table: "wards", column: "code" })]),
+                        jansevak: schema.string({}, [rules.exists({
+                            table: "users",
+                            column: "uuid",
+                            where: { user_type: [UserTypes.JANSEVAK, UserTypes.ADMIN] },
+                        })]),
+                    }),
+                    profile: schema.object().members(ProfileDataSchema),
+                    avatar: schema.file.optional({ size: "2mb", extnames: ["jpg", "png", "jpeg"] }),
+                }),
+                data: {
+                    user: _user,
+                    profile: _profile,
+                    avatar: _avatar,
+                },
+            });
+        } catch (e) {
+            throw new ValidationException(e.message, e.messages);
+        }
+
+        // get user profile
+        const profile = await user.related("profile").query().preload("address").first();
+        if (!profile) return Responses.sendNotFoundResponse(response, "Profile not found");
+
+        await this.updateProfileData(profile, {
+            firstName: validatedData.profile.first_name,
+            lastName: validatedData.profile.last_name,
+            aadharNumber: validatedData.profile.aadhar_number,
+            voterIdNumber: validatedData.profile.voter_id_number,
+            gender: validatedData.profile.gender,
+            email: validatedData.profile.email,
+            birthDate: validatedData.profile.birth_date,
+        });
+
+        // update profile address
+        profile.address.merge({ country: "IN" });
+        await this.updateProfileAddress(profile, {
+            addressLineOne: validatedData.profile.address.address_line_1,
+            addressLineTwo: validatedData.profile.address.address_line_2,
+            district: validatedData.profile.address.district,
+            state: validatedData.profile.address.state,
+            city: validatedData.profile.address.city,
+            pincode: validatedData.profile.address.pincode,
+        });
+
+        // update avatar if provided
+        if (validatedData.avatar) {
+            await this.updateProfileAvatar(profile, { avatar: validatedData.avatar });
+        }
+
+        // create user allocation
+        const ward = await Ward.query().where("code", validatedData.user.ward).first();
+        const jansevak = await User.query().where("uuid", validatedData.user.jansevak).first();
+        if (ward && jansevak) {
+            await user.related("allocation").create({
+                wardId: ward.id,
+                allocatedTo: jansevak.id,
+                createdBy: user.id,
+            });
+        }
+
+        // update profile setup status
+        user.isSetupCompleted = true;
+        await user.save();
+        await profile.save();
+
+        return response.status(200).json(Responses.createResponse(validatedData, [], "Profile setup completed"));
     }
 
     public async showProfile({ response, auth, params }: HttpContextContract) {
@@ -124,5 +287,48 @@ export default class ProfilesController {
                 },
             },
         }), [ResponseCodes.SUCCESS_WITH_DATA], "Profile fetched successfully"));
+    }
+
+    private async updateProfileData(profile: Profile, validatedData: Partial<{ firstName, lastName, aadharNumber, voterIdNumber, gender, email, birthDate }>) {
+        profile.merge(validatedData);
+        await profile.save();
+    }
+
+    private async updateProfileAddress(profile: Profile, validatedData: Partial<{ addressLineOne, addressLineTwo, district, city, state, pincode }>) {
+        if (profile.address) {
+            profile.address.merge(validatedData);
+            await profile.address.save();
+        }
+    }
+
+    private async updateProfileAvatar(profile: Profile, validatedData: Partial<{ avatar }>) {
+        if (validatedData.avatar) {
+            // get previous avatar if exists
+            const previousAvatar = await profile.getAvatarAttachment();
+            if (previousAvatar) {
+                // delete previous avatar and file
+                if (await Drive.exists(previousAvatar.fileName)) await Drive.delete(previousAvatar.fileName);
+                await previousAvatar.forceDelete();
+            }
+
+            // save new avatar
+            try {
+                await validatedData.avatar.moveToDisk("./");
+                const avatarAttachment = await Attachment.create({
+                    clientName: validatedData.avatar.clientName,
+                    fileName: validatedData.avatar.fileName,
+                    filePath: validatedData.avatar.filePath,
+                    fileType: validatedData.avatar.extname,
+                    mimeType: validatedData.avatar.type + "/" + validatedData.avatar.subtype,
+                    referenceType: PolymorphicType.Profile,
+                    referenceId: profile.id,
+                });
+
+                profile.avatar = await avatarAttachment.getURL();
+                await profile.save();
+            } catch (e) {
+                throw new UnknownErrorException(e.message, e.messages);
+            }
+        }
     }
 }

@@ -6,7 +6,7 @@ import { GroupTypes } from "App/Helpers/Groups";
 
 export default class GroupPolicy extends BasePolicy {
     public async canWriteExistingMemberToFamily(user: User) {
-        return user.isVerified && user.isRegistered && user.isSetupCompleted;
+        return !!(user.isVerified && user.isRegistered && user.isSetupCompleted);
     }
 
     /**

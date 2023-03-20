@@ -1,6 +1,6 @@
 import type { HttpContextContract } from "@ioc:Adonis/Core/HttpContext";
 import Responses, { ResponseCodes } from "App/Helpers/Responses";
-import { schema, validator } from "@ioc:Adonis/Core/Validator";
+import { rules, schema, validator } from "@ioc:Adonis/Core/Validator";
 import User from "App/Models/User";
 import { getLoggedInUser, OtpTypes, UserTypes, UserVerificationStatuses, verifyOTP } from "App/Helpers/Authentication";
 import ValidationException from "App/Exceptions/ValidationException";
@@ -13,6 +13,7 @@ import UnknownErrorException from "App/Exceptions/UnknownErrorException";
 import console from "console";
 import Drive from "@ioc:Adonis/Core/Drive";
 import { CreateJansevakDataSchema, CreateJansevakDataSchemaMessages } from "App/Helpers/Validators";
+import UserAllocation from "App/Models/UserAllocation";
 
 export default class UsersController {
     /**
@@ -315,5 +316,115 @@ export default class UsersController {
         });
 
         return response.status(200).json(Responses.createResponse(newJansevakUser, [ResponseCodes.USER_CREATED], "New Jansevak created"));
+    }
+
+    public async getJansevaks({ auth, response, request }: HttpContextContract) {
+        // check if user is authenticated
+        let user = await getLoggedInUser(auth);
+        if (!user) return Responses.sendUnauthenticatedResponse(response);
+
+        // get user data from request
+        const { user: _user, ward: _ward } = request.qs();
+
+
+        let validatedData: { user: string | undefined; ward: string | undefined; };
+        try {
+            validatedData = await validator.validate({
+                schema: schema.create({
+                    user: schema.string.optional({ trim: true }, [rules.uuid(), rules.exists({
+                        table: "users",
+                        column: "uuid",
+                        where: { deleted_at: null },
+                    })]),
+                    ward: schema.string.optional({ trim: true }, [rules.exists({
+                        table: "wards",
+                        column: "code",
+                        where: { deleted_at: null },
+                    })]),
+                }),
+                data: { user: _user, ward: _ward },
+            });
+        } catch (e) {
+            throw new ValidationException(e.message, e.messages);
+        }
+
+        // fetch user
+        if (validatedData.user) {
+            const __user = await User.findBy("uuid", validatedData.user);
+            if (__user) user = __user;
+        }
+
+        await user.load("allocation", (query) => {
+            query.preload("allocatedToUser", (query) => {
+                query.preload("profile");
+            });
+        });
+
+        // check if user is authorized to get jansevaks
+        /* Write Logic Here */
+
+        const jansevakObject: any = {};
+
+        if (user?.allocation) {
+            // add my jansevak if exists
+            if (user.allocation.allocatedToUser) {
+                jansevakObject.my_jansevak = user.allocation.allocatedToUser.serialize({
+                    fields: { pick: ["uuid", "user_type", "phone_number"] },
+                    relations: {
+                        profile: { fields: { pick: ["first_name", "last_name", "full_name", "initials_and_last_name", "avatar_url"] } },
+                    },
+                });
+            }
+
+
+            // get ward jansevaks
+            const wardJansevaks = await UserAllocation.query().where("ward_id", user.allocation.wardId).whereHas("user", (query) => {
+                query.where("user_type", UserTypes.JANSEVAK);
+            }).preload("user", (query) => {
+                query.preload("profile");
+            });
+
+            // filter out my jansevak if exists
+            let filteredWardJansevaks = wardJansevaks;
+            if (user.allocation.allocatedToUser) {
+                filteredWardJansevaks = wardJansevaks.filter((allocation) => allocation.user.id !== user?.allocation.allocatedToUser.id);
+            }
+
+            // add ward jansevaks if exists
+            if (filteredWardJansevaks.length > 0) {
+                jansevakObject.ward_jansevaks = filteredWardJansevaks.map((allocation) => allocation.user.serialize({
+                    fields: { pick: ["uuid", "user_type", "phone_number"] },
+                    relations: {
+                        profile: { fields: { pick: ["first_name", "last_name", "full_name", "initials_and_last_name", "avatar_url"] } },
+                    },
+                }));
+            }
+        }
+
+
+        // if there is given ward, get given ward jansevaks
+        if (validatedData.ward) {
+            const givenWard = await Ward.findBy("code", validatedData.ward);
+            if (givenWard) {
+                const givenWardJansevaks = await UserAllocation.query().where("ward_id", givenWard.id).whereHas("user", (query) => {
+                    query.where("user_type", UserTypes.JANSEVAK);
+                }).preload("user", (query) => {
+                    query.preload("profile");
+                });
+
+                // add given ward jansevaks if exists
+                if (givenWardJansevaks.length > 0) {
+                    jansevakObject.given_ward_jansevaks = givenWardJansevaks.map((allocation) => allocation.user.serialize({
+                        fields: { pick: ["uuid", "user_type", "phone_number"] },
+                        relations: {
+                            profile: { fields: { pick: ["first_name", "last_name", "full_name", "initials_and_last_name", "avatar_url"] } },
+                        },
+                    }));
+                }
+            }
+        }
+
+        return response.status(200).json(Responses.createResponse(jansevakObject, [ResponseCodes.SUCCESS_WITH_DATA], "Jansevak fetched"));
+
     }
 }

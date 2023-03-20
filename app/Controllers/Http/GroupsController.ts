@@ -3,7 +3,7 @@ import { getLoggedInUser } from "App/Helpers/Authentication";
 import Responses, { ResponseCodes } from "App/Helpers/Responses";
 import Group from "App/Models/Group";
 import { GroupTypes } from "App/Helpers/Groups";
-import { validator, schema, rules } from "@ioc:Adonis/Core/Validator";
+import { rules, schema, validator } from "@ioc:Adonis/Core/Validator";
 import User from "App/Models/User";
 import UnknownErrorException from "App/Exceptions/UnknownErrorException";
 import ValidationException from "App/Exceptions/ValidationException";

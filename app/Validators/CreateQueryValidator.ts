@@ -32,7 +32,7 @@ export default class CreateQueryValidator {
      */
     public static schema = schema.create({
         form: schema.object().members({
-            subject: schema.string({ trim: true }, [rules.minLength(10)]),
+            subject: schema.string({ trim: true }, [rules.minLength(3)]),
             description: schema.string({ trim: true }),
             category: schema.string({ trim: true }, [rules.exists({ table: "query_categories", column: "uuid" })]),
         }),

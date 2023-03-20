@@ -10,6 +10,7 @@ export default function authRoutes() {
         }).prefix("/nagarik");
 
         Route.group(() => {
+            Route.get("/list", "UsersController.getJansevaks");
             Route.post("/create", "UsersController.newJansevak");
         }).prefix("/jansevak");
     }).prefix("/user");

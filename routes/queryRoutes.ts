@@ -7,6 +7,7 @@ export default function queryRoutes() {
         Route.post("/category/archive", "QueriesController.archiveCategory");
 
         Route.post("/create", "QueriesController.createQuery");
+        Route.get("/list/my", "QueriesController.getMyQueries");
 
         Route.get("/show/:id", "QueriesController.showQuery");
         Route.get("/show/:id/info", "QueriesController.getQueryInfo");

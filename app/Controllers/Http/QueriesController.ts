@@ -285,6 +285,51 @@ export default class QueriesController {
         }), [ResponseCodes.SUCCESS_WITH_DATA], "Query fetched"));
     }
 
+    public async getMyQueries({ response, auth }: HttpContextContract) {
+        // check if user is authenticated
+        const user = await getLoggedInUser(auth);
+        if (!user) return Responses.sendUnauthenticatedResponse(response);
+
+        // check if user is authorized to get queries
+        /* Write logic */
+
+        // get queries that are created by user and on behalf of user
+        const queries = await Query.query().whereHas("userRelation", (query) => {
+            query.where("created_by", user.id).orWhere("on_behalf_of", user.id);
+        }).preload("queryCategory").preload("userRelation", (query) => {
+            query.preload("onBehalfOfUser", (query) => {
+                query.preload("profile");
+            });
+
+            query.preload("forJansevakUser", (query) => {
+                query.preload("profile");
+            });
+        }).orderBy("created_at", "desc");
+
+        return response.status(200).send(Responses.createResponse(queries.map(query => query.serialize({
+            fields: { omit: ["queryCategory", "queryComments"] },
+            relations: {
+                userRelation: {
+                    fields: { omit: ["created_at", "updated_at", "deleted_at"] },
+                    relations: {
+                        onBehalfOfUser: {
+                            fields: { pick: ["uuid", "user_type", "phone_number"] },
+                            relations: {
+                                profile: { fields: { pick: ["first_name", "last_name", "full_name", "initials_and_last_name", "avatar_url"] } },
+                            },
+                        },
+                        forJansevakUser: {
+                            fields: { pick: ["uuid", "user_type"] },
+                            relations: {
+                                profile: { fields: { pick: ["first_name", "last_name", "full_name", "initials_and_last_name", "avatar_url"] } },
+                            },
+                        },
+                    },
+                },
+            },
+        })), [ResponseCodes.SUCCESS_WITH_DATA], "Queries fetched"));
+    }
+
     /**
      * Get query info
      * @param request
@@ -572,6 +617,10 @@ export default class QueriesController {
             status: validatedData.status as QueryStatuses | undefined,
             userId: user.id,
         });
+
+        // update query status
+        query.status = validatedData.status as QueryStatuses;
+        await query.save();
 
         await _comment.load("user", (query) => {
             query.preload("profile");

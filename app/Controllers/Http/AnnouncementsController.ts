@@ -32,7 +32,6 @@ export default class AnnouncementsController {
 
             // check if user is authorized to write announcements
             allowed = await bouncer.forUser(user).with("AnnouncementPolicy").allows("canWriteAnnouncement");
-            if (!allowed) return Responses.sendUnauthorizedResponse(response);
         }
 
         const announcements = await Announcement.query().if(allowed && withArchived, (query) => {
@@ -44,7 +43,9 @@ export default class AnnouncementsController {
         }).if(!p && sd && ed, (query) => {
             query.whereBetween("published_at", [DateTime.fromFormat(sd, "yyyy-MM-dd").toISO(), DateTime.fromFormat(ed, "yyyy-MM-dd").toISO()]);
         }).orderBy("published_at", "desc");
-        console.log(announcements);
+
+        // check if announcements exist
+        if (!announcements.length) return response.status(404).send(Responses.createResponse(null, [ResponseCodes.DATA_NOT_FOUND], "No announcements found"));
 
         const serializedAnnouncements = await Promise.all(announcements.map(async (announcement) => {
             return Object.assign(announcement.serialize({
@@ -53,7 +54,7 @@ export default class AnnouncementsController {
         }));
 
         // return response
-        return response.status(201).send(Responses.createResponse(serializedAnnouncements, [ResponseCodes.SUCCESS_WITH_DATA], "Announcement created successfully"));
+        return response.status(201).send(Responses.createResponse(serializedAnnouncements, [ResponseCodes.SUCCESS_WITH_DATA], "Announcement fetched successfully"));
     }
 
     /**
@@ -147,13 +148,10 @@ export default class AnnouncementsController {
         }
 
         // Find announcement by slug
-        const announcement = await Announcement.query().if(allowed, (query) => {
-            query.withTrashed();
-        }).if(allowed, (query) => {
-            query.whereNull("published_at");
-        }).if(!allowed, (query) => {
+        const announcement = await Announcement.query().withTrashed().where("slug", slug).if(!allowed, (query) => {
             query.whereNotNull("published_at");
-        }).where("slug", slug).first();
+            query.whereNull("deleted_at");
+        }).first();
         if (!announcement) return Responses.sendNotFoundResponse(response, "Announcement not found");
 
         // return response
