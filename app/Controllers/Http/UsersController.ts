@@ -14,6 +14,7 @@ import console from "console";
 import Drive from "@ioc:Adonis/Core/Drive";
 import { CreateJansevakDataSchema, CreateJansevakDataSchemaMessages } from "App/Helpers/Validators";
 import UserAllocation from "App/Models/UserAllocation";
+import Hash from "@ioc:Adonis/Core/Hash";
 
 export default class UsersController {
     /**
@@ -23,58 +24,33 @@ export default class UsersController {
      * @param response
      * @param bouncer
      */
-    public async updatePassword({ auth, request, response, bouncer }: HttpContextContract) {
+    public async updatePassword({ auth, request, response }: HttpContextContract) {
         // check if user is authenticated
-        await auth.use("jwt").authenticate();
-        const user = auth.use("jwt").user;
+        const user = await getLoggedInUser(auth);
+        if (!user) return Responses.sendUnauthenticatedResponse(response);
 
-        if (!user) {
-            return response.status(401).json(Responses.createResponse({}, [ResponseCodes.USER_NOT_AUTHENTICATED], "User not authenticated"));
+        // check if user is authorized to update password
+        /* Write Logic Here */
+
+        // check if request is valid
+        let validatedData;
+        try {
+            validatedData = await validator.validate({
+                schema: schema.create({
+                    password: schema.string({ trim: true }, [rules.minLength(8), rules.maxLength(64), rules.regex(/^((?!.*\s)(?=.*\d).{8,})$/), rules.confirmed()]),
+                }),
+                data: request.only(["password", "password_confirmation"]),
+                reporter: validator.reporters.api,
+            });
+        } catch (e) {
+            throw new ValidationException(e.message, e.messages);
         }
 
-        const { password, new_password, update_for } = request.only(["password", "new_password", "update_for"]);
-
-        let userToUpdate = user;
-        if (update_for) {
-            const userToUpdate = await User.findBy("uuid", update_for);
-            if (!userToUpdate) {
-                return response.status(400).json(Responses.createResponse({}, [ResponseCodes.USER_NOT_FOUND], "User not found"));
-            }
-        }
-
-        const allows = await bouncer.forUser(user).with("UserPolicy").allows("canUpdateUserPassword", userToUpdate);
-        if (!allows) {
-            return response.status(400).json(Responses.createResponse({}, [ResponseCodes.USER_NOT_AUTHORIZED], "User not authorized to update password"));
-        }
-
-        // Check if password is valid
-        if (!new_password || !password) {
-            return response.status(400).json(Responses.createResponse({}, [ResponseCodes.INVALID_REQUEST], "Password not provided"));
-        }
-
-        // Check if new password is valid
-        if (!validator.isStrongPassword(new_password, { minLength: 8 })) {
-            return response.status(400).json(Responses.createResponse({}, [ResponseCodes.INVALID_REQUEST], "Invalid new password"));
-        }
-
-        // Check if new password is same as old password
-        if (new_password === password) {
-            return response.status(400).json(Responses.createResponse({}, [ResponseCodes.INVALID_REQUEST], "New password cannot be same as old password"));
-        }
-
-        // If user is updating his own password, check if password matches
-        if (userToUpdate.id === user.id) {
-            // check if password matches
-            const isPasswordValid = await user.verifyPassword(password);
-            if (!isPasswordValid) {
-                return response.status(400).json(Responses.createResponse({}, [ResponseCodes.PASSWORD_DID_NOT_MATCH], "Invalid password"));
-            }
-        }
-
-        user.password = new_password;
+        // update password
+        user.password = validatedData.password;
         await user.save();
 
-        return response.status(200).json(Responses.createResponse({}, [ResponseCodes.PASSWORD_RESET_DONE, ResponseCodes.USER_UPDATED], "Password reset done"));
+        return response.status(200).json(Responses.createResponse({}, [ResponseCodes.PASSWORD_RESET_DONE], "User password updated"));
     }
 
     /**

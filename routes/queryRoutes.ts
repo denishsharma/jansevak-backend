@@ -8,6 +8,12 @@ export default function queryRoutes() {
 
         Route.post("/create", "QueriesController.createQuery");
         Route.get("/list/my", "QueriesController.getMyQueries");
+        Route.get("/list/assigned", "QueriesController.getAssignedQueries");
+
+        Route.post("/status/review/:id", "QueriesController.statusReviewQuery");
+        Route.post("/status/progress/:id", "QueriesController.statusProgressQuery");
+        Route.post("/status/resolved/:id", "QueriesController.statusResolvedQuery");
+        Route.post("/status/reject/:id", "QueriesController.statusRejectedQuery");
 
         Route.get("/show/:id", "QueriesController.showQuery");
         Route.get("/show/:id/info", "QueriesController.getQueryInfo");

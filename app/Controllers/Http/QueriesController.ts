@@ -1,7 +1,7 @@
 import type { HttpContextContract } from "@ioc:Adonis/Core/HttpContext";
 import QueryCategory from "App/Models/QueryCategory";
 import Responses, { ResponseCodes } from "App/Helpers/Responses";
-import { getLoggedInUser } from "App/Helpers/Authentication";
+import { getLoggedInUser, UserTypes } from "App/Helpers/Authentication";
 import { DateTime } from "luxon";
 import { QueryCommentTypes, QueryStatuses, QueryStatusesValues } from "App/Helpers/Queries";
 import Query from "App/Models/Query";
@@ -14,6 +14,8 @@ import User from "App/Models/User";
 import { rules } from "@adonisjs/validator/build/src/Rules";
 import Group from "App/Models/Group";
 import { GroupTypes } from "App/Helpers/Groups";
+import QueryComment from "App/Models/QueryComment";
+import console from "console";
 
 export default class QueriesController {
 
@@ -330,6 +332,51 @@ export default class QueriesController {
         })), [ResponseCodes.SUCCESS_WITH_DATA], "Queries fetched"));
     }
 
+    public async getAssignedQueries({ response, auth }: HttpContextContract) {
+        // check if user is authenticated
+        const user = await getLoggedInUser(auth);
+        if (!user) return Responses.sendUnauthenticatedResponse(response);
+
+        // check if user is authorized to get queries
+        /* Write logic */
+
+        // get queries that are assigned to user
+        const queries = await Query.query().whereHas("userRelation", (query) => {
+            query.where("for_jansevak", user.id);
+        }).preload("queryCategory").preload("userRelation", (query) => {
+            query.preload("onBehalfOfUser", (query) => {
+                query.preload("profile");
+            });
+
+            query.preload("forJansevakUser", (query) => {
+                query.preload("profile");
+            });
+        }).orderBy("created_at", "desc");
+
+        return response.status(200).send(Responses.createResponse(queries.map(query => query.serialize({
+            fields: { omit: ["queryCategory", "queryComments"] },
+            relations: {
+                userRelation: {
+                    fields: { omit: ["created_at", "updated_at", "deleted_at"] },
+                    relations: {
+                        onBehalfOfUser: {
+                            fields: { pick: ["uuid", "user_type", "phone_number"] },
+                            relations: {
+                                profile: { fields: { pick: ["first_name", "last_name", "full_name", "initials_and_last_name", "avatar_url"] } },
+                            },
+                        },
+                        forJansevakUser: {
+                            fields: { pick: ["uuid", "user_type"] },
+                            relations: {
+                                profile: { fields: { pick: ["first_name", "last_name", "full_name", "initials_and_last_name", "avatar_url"] } },
+                            },
+                        },
+                    },
+                },
+            },
+        })), [ResponseCodes.SUCCESS_WITH_DATA], "Queries fetched"));
+    }
+
     /**
      * Get query info
      * @param request
@@ -353,6 +400,14 @@ export default class QueriesController {
                     query.preload("address");
                 });
             });
+
+            query.preload("createdByUser", (query) => {
+                query.preload("profile");
+            });
+
+            query.preload("forJansevakUser", (query) => {
+                query.preload("profile");
+            });
         }).first();
 
         if (!query) return Responses.sendNotFoundResponse(response, "Query not found");
@@ -371,6 +426,18 @@ export default class QueriesController {
                                         address: { fields: { omit: ["created_at", "updated_at"] } },
                                     },
                                 },
+                            },
+                        },
+                        createdByUser: {
+                            fields: { pick: ["uuid", "user_type", "phone_number"] },
+                            relations: {
+                                profile: { fields: { pick: ["first_name", "last_name", "full_name", "initials_and_last_name", "avatar_url"] } },
+                            },
+                        },
+                        forJansevakUser: {
+                            fields: { pick: ["uuid", "user_type", "phone_number"] },
+                            relations: {
+                                profile: { fields: { pick: ["first_name", "last_name", "full_name", "initials_and_last_name", "avatar_url"] } },
                             },
                         },
                     },
@@ -636,5 +703,220 @@ export default class QueriesController {
                 },
             },
         }), [ResponseCodes.SUCCESS_WITH_DATA], "Comment added"));
+    }
+
+    public async statusReviewQuery({ request, response, auth }: HttpContextContract) {
+        // check if user is authenticated
+        const user = await getLoggedInUser(auth);
+        if (!user) return Responses.sendUnauthenticatedResponse(response);
+
+        // check if user is authorized to add comment
+        /* Write logic */
+
+        const { id: query_id } = request.params();
+
+        let validatedData: { query: string; };
+        try {
+            validatedData = await validator.validate({
+                schema: schema.create({
+                    query: schema.string({ trim: true }, [rules.uuid(), rules.exists({
+                        table: "queries",
+                        column: "uuid",
+                        where: { status: QueryStatuses.CREATED, deleted_at: null },
+                    })]),
+                }),
+                data: { query: query_id },
+                reporter: validator.reporters.api,
+            });
+        } catch (e) {
+            throw new ValidationException(e.message, e.messages);
+        }
+
+        // get query
+        const query = await Query.query().where("uuid", validatedData.query).preload("userRelation").firstOrFail();
+
+        // Only assigned Jansevak and Admin can change the status to in review
+        if (user.userType !== UserTypes.ADMIN && query.userRelation.forJansevak !== user.id) {
+            return response.status(403).send(Responses.createResponse({}, [ResponseCodes.USER_NOT_AUTHORIZED], "You are not authorized to update query status"));
+        }
+
+        // add comment
+        await query.related("queryComments").create({
+            type: QueryCommentTypes.LOG,
+            status: QueryStatuses.IN_REVIEW,
+            userId: user.id,
+        });
+
+        // update query status
+        query.status = QueryStatuses.IN_REVIEW;
+        await query.save();
+
+        return response.status(200).send(Responses.createResponse({}, [ResponseCodes.SUCCESS_WITH_NO_DATA], "Query status updated"));
+    }
+
+    public async statusProgressQuery({ request, response, auth }: HttpContextContract) {
+        // check if user is authenticated
+        const user = await getLoggedInUser(auth);
+        if (!user) return Responses.sendUnauthenticatedResponse(response);
+
+        // check if user is authorized to add comment
+        /* Write logic */
+
+        const { id: query_id } = request.params();
+        const { comment } = request.only(["comment"]);
+
+        let validatedData: { query: string; comment: string | undefined; };
+        try {
+            validatedData = await validator.validate({
+                schema: schema.create({
+                    query: schema.string({ trim: true }, [rules.uuid(), rules.exists({
+                        table: "queries",
+                        column: "uuid",
+                        where: { deleted_at: null },
+                        whereNot: { status: QueryStatuses.IN_PROGRESS },
+                    })]),
+                    comment: schema.string.optional({ trim: true }, [rules.maxLength(255)]),
+                }),
+                data: { query: query_id, comment },
+                reporter: validator.reporters.api,
+            });
+        } catch (e) {
+            throw new ValidationException(e.message, e.messages);
+        }
+
+        // get query
+        const query = await Query.query().where("uuid", validatedData.query).preload("userRelation").firstOrFail();
+
+        // Only assigned Jansevak and Admin can change the status to in review
+        if (user.userType !== UserTypes.ADMIN && query.userRelation.forJansevak !== user.id) {
+            return response.status(403).send(Responses.createResponse({}, [ResponseCodes.USER_NOT_AUTHORIZED], "You are not authorized to update query status"));
+        }
+
+        // check if query has any comment with status in review
+        const queryComment = await QueryComment.query().where("query_id", query.id).where("status", QueryStatuses.IN_REVIEW).first();
+        if (!queryComment) {
+            // add comment with status in review
+            await query.related("queryComments").create({
+                type: QueryCommentTypes.LOG,
+                status: QueryStatuses.IN_REVIEW,
+                userId: user.id,
+            });
+        }
+
+        // add comment
+        await query.related("queryComments").create({
+            type: QueryCommentTypes.LOG,
+            status: QueryStatuses.IN_PROGRESS,
+            userId: user.id,
+            ...(validatedData.comment && { comment }),
+        });
+
+        // update query status
+        query.status = QueryStatuses.IN_PROGRESS;
+        await query.save();
+
+        return response.status(200).send(Responses.createResponse({}, [ResponseCodes.SUCCESS_WITH_NO_DATA], "Query status updated"));
+    }
+
+    public async statusResolvedQuery({ request, response, auth }: HttpContextContract) {
+        // check if user is authenticated
+        const user = await getLoggedInUser(auth);
+        if (!user) return Responses.sendUnauthenticatedResponse(response);
+
+        // check if user is authorized to add comment
+        /* Write logic */
+
+        const { id: query_id } = request.params();
+
+        let validatedData: { query: string; };
+        try {
+            validatedData = await validator.validate({
+                schema: schema.create({
+                    query: schema.string({ trim: true }, [rules.uuid(), rules.exists({
+                        table: "queries",
+                        column: "uuid",
+                        where: { deleted_at: null, status: QueryStatuses.IN_PROGRESS },
+                        whereNot: { status: QueryStatuses.RESOLVED },
+                    })]),
+                }),
+                data: { query: query_id },
+                reporter: validator.reporters.api,
+            });
+        } catch (e) {
+            throw new ValidationException(e.message, e.messages);
+        }
+
+        // get query
+        const query = await Query.query().where("uuid", validatedData.query).preload("userRelation").firstOrFail();
+
+        // Only assigned Jansevak and Admin can change the status to in review
+        if (user.userType !== UserTypes.ADMIN && query.userRelation.forJansevak !== user.id) {
+            return response.status(403).send(Responses.createResponse({}, [ResponseCodes.USER_NOT_AUTHORIZED], "You are not authorized to update query status"));
+        }
+
+        // add comment
+        await query.related("queryComments").create({
+            type: QueryCommentTypes.LOG,
+            status: QueryStatuses.RESOLVED,
+            userId: user.id,
+        });
+
+        // update query status
+        query.status = QueryStatuses.RESOLVED;
+        await query.save();
+
+        return response.status(200).send(Responses.createResponse({}, [ResponseCodes.SUCCESS_WITH_NO_DATA], "Query status updated"));
+    }
+
+    public async statusRejectedQuery({ request, response, auth }: HttpContextContract) {
+        // check if user is authenticated
+        const user = await getLoggedInUser(auth);
+        if (!user) return Responses.sendUnauthenticatedResponse(response);
+
+        // check if user is authorized to add comment
+        /* Write logic */
+
+        const { id: query_id } = request.params();
+        const { comment } = request.only(["comment"]);
+
+        let validatedData: { query: string; };
+        try {
+            validatedData = await validator.validate({
+                schema: schema.create({
+                    query: schema.string({ trim: true }, [rules.uuid(), rules.exists({
+                        table: "queries",
+                        column: "uuid",
+                        where: { deleted_at: null, status: QueryStatuses.IN_PROGRESS },
+                        whereNot: { status: QueryStatuses.REJECTED },
+                    })]),
+                    comment: schema.string.optional({ trim: true }),
+                }),
+                data: { query: query_id, comment },
+                reporter: validator.reporters.api,
+            });
+        } catch (e) {
+            throw new ValidationException(e.message, e.messages);
+        }
+
+        // get query
+        const query = await Query.query().where("uuid", validatedData.query).preload("userRelation").firstOrFail();
+
+        // Only assigned Jansevak and Admin can change the status to in review
+        if (user.userType !== UserTypes.ADMIN && query.userRelation.forJansevak !== user.id) {
+            return response.status(403).send(Responses.createResponse({}, [ResponseCodes.USER_NOT_AUTHORIZED], "You are not authorized to update query status"));
+        }
+
+        // add comment
+        await query.related("queryComments").create({
+            type: QueryCommentTypes.LOG,
+            status: QueryStatuses.REJECTED,
+            userId: user.id,
+        });
+
+        // update query status
+        query.status = QueryStatuses.REJECTED;
+        await query.save();
+
+        return response.status(200).send(Responses.createResponse({}, [ResponseCodes.SUCCESS_WITH_NO_DATA], "Query status updated"));
     }
 }

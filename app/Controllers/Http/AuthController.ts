@@ -40,7 +40,7 @@ export default class AuthController {
 
         // Check if user exists
         // If user does not exist, create a new user
-        if (!user) {
+        if (!user && mode === "otp") {
             // Create a new user
             user = await User.create({ phoneNumber: phone_number, userType: UserTypes.NAGRIK });
             user.related("permissions").sync(await getPermissionSet("defaultUser"));
@@ -50,6 +50,8 @@ export default class AuthController {
 
             // Send user created event
             await Event.emit("user:created", { id: user.id, email: user.email, phoneNumber: user.phoneNumber });
+        } else if (!user) {
+            return response.status(400).json(Responses.createResponse({}, [ResponseCodes.USER_NOT_AUTHENTICATED], "Invalid credentials"));
         }
 
         // Check if user is verified and mode is not empty
@@ -73,7 +75,8 @@ export default class AuthController {
             // Check if mode is password or mode is email
             if (mode === "email" || mode === "password") {
                 // Check if user is allowed to login using password
-                const allowLoginUsingPassword = await bouncer.forUser(user).with("AuthPolicy").allows("canLoginUsingPassword");
+                const allowLoginUsingPassword = true;
+                // await bouncer.forUser(user).with("AuthPolicy").allows("canLoginUsingPassword");
                 if (!allowLoginUsingPassword) {
                     return response.status(400).json(Responses.createResponse({}, [ResponseCodes.USER_NOT_AUTHORIZED], "User not authorized to login using password"));
                 }

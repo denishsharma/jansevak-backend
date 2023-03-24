@@ -294,6 +294,6 @@ export default class User extends compose(BaseModel, SoftDeletes) {
      */
     public async verifyPassword(password: string) {
         if (this.password === null) return false;
-        return await Hash.verify(password, this.password);
+        return await Hash.verify(this.password, password);
     }
 }
