@@ -31,6 +31,7 @@ import questionRoutes from "../routes/questionRoutes";
 import queryRoutes from "../routes/queryRoutes";
 import certRoutes from "../routes/certRoutes";
 import groupRoutes from "../routes/groupRoutes";
+import statisticRoutes from "../routes/statisticRoutes";
 
 Route.get("/", async () => {
     return { hello: "world" };
@@ -48,5 +49,6 @@ Route.group(() => {
     queryRoutes();
     certRoutes();
     groupRoutes();
+    statisticRoutes();
 }).prefix("/api/");
 

@@ -54,7 +54,7 @@ export async function getLoggedInUser(auth: HttpContextContract["auth"]) {
                     } as any)]),
                 }),
                 data: userPayload,
-                reporter: validator.reporters.api,
+                reporter: validator.reporters.jsonapi,
             });
         } catch {
             return undefined;

@@ -5,5 +5,6 @@ export default function profileRoutes() {
         Route.post("/setup", "ProfilesController.setupProfile");
         Route.post("/update/:id", "ProfilesController.updateProfile");
         Route.get("/show/:id?", "ProfilesController.showProfile");
+        Route.get("/summary/:id", "ProfilesController.getProfileSummary");
     }).prefix("/profile");
 }

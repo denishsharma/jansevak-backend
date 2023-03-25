@@ -13,5 +13,7 @@ export default function authRoutes() {
             Route.get("/list", "UsersController.getJansevaks");
             Route.post("/create", "UsersController.newJansevak");
         }).prefix("/jansevak");
+
+        Route.get("/fid/:fid", "UsersController.getUserByFid");
     }).prefix("/user");
 }

@@ -726,7 +726,7 @@ export default class QueriesController {
                     })]),
                 }),
                 data: { query: query_id },
-                reporter: validator.reporters.api,
+                reporter: validator.reporters.jsonapi,
             });
         } catch (e) {
             throw new ValidationException(e.message, e.messages);
@@ -778,7 +778,7 @@ export default class QueriesController {
                     comment: schema.string.optional({ trim: true }, [rules.maxLength(255)]),
                 }),
                 data: { query: query_id, comment },
-                reporter: validator.reporters.api,
+                reporter: validator.reporters.jsonapi,
             });
         } catch (e) {
             throw new ValidationException(e.message, e.messages);
@@ -840,7 +840,7 @@ export default class QueriesController {
                     })]),
                 }),
                 data: { query: query_id },
-                reporter: validator.reporters.api,
+                reporter: validator.reporters.jsonapi,
             });
         } catch (e) {
             throw new ValidationException(e.message, e.messages);
@@ -892,7 +892,7 @@ export default class QueriesController {
                     comment: schema.string.optional({ trim: true }),
                 }),
                 data: { query: query_id, comment },
-                reporter: validator.reporters.api,
+                reporter: validator.reporters.jsonapi,
             });
         } catch (e) {
             throw new ValidationException(e.message, e.messages);

@@ -15,6 +15,8 @@ import Drive from "@ioc:Adonis/Core/Drive";
 import { CreateJansevakDataSchema, CreateJansevakDataSchemaMessages } from "App/Helpers/Validators";
 import UserAllocation from "App/Models/UserAllocation";
 import Hash from "@ioc:Adonis/Core/Hash";
+import Group from "App/Models/Group";
+import { GroupTypes } from "App/Helpers/Groups";
 
 export default class UsersController {
     /**
@@ -40,7 +42,7 @@ export default class UsersController {
                     password: schema.string({ trim: true }, [rules.minLength(8), rules.maxLength(64), rules.regex(/^((?!.*\s)(?=.*\d).{8,})$/), rules.confirmed()]),
                 }),
                 data: request.only(["password", "password_confirmation"]),
-                reporter: validator.reporters.api,
+                reporter: validator.reporters.jsonapi,
             });
         } catch (e) {
             throw new ValidationException(e.message, e.messages);
@@ -221,7 +223,7 @@ export default class UsersController {
                     avatar: _avatar,
                 },
                 messages: CreateJansevakDataSchemaMessages,
-                reporter: validator.reporters.api,
+                reporter: validator.reporters.jsonapi,
             });
         } catch (e) {
             throw new ValidationException(e.message, e.messages.errors);
@@ -402,5 +404,76 @@ export default class UsersController {
 
         return response.status(200).json(Responses.createResponse(jansevakObject, [ResponseCodes.SUCCESS_WITH_DATA], "Jansevak fetched"));
 
+    }
+
+    public async getUserByFid({ auth, response, params, request }: HttpContextContract) {
+        // check if user is authenticated
+        let user = await getLoggedInUser(auth);
+        if (!user) return Responses.sendUnauthenticatedResponse(response);
+
+        // check if user is authorized to get user by fid
+        /* Write Logic Here */
+
+        const { get } = request.qs();
+
+        let validatedData: { fid: string; get: "all" | "my_nagarik" | "family"; };
+        try {
+            validatedData = await validator.validate({
+                schema: schema.create({
+                    fid: schema.string({ trim: true }, [rules.exists({
+                        table: "users",
+                        column: "fid",
+                        where: { deleted_at: null },
+                        whereNot: { fid: user.fid },
+                    })]),
+                    get: schema.enum(["all", "my_nagarik", "family"] as const),
+                }),
+                data: { fid: params.fid, get },
+                reporter: validator.reporters.jsonapi,
+            });
+        } catch (e) {
+            throw new ValidationException(e.message, e.messages);
+        }
+
+        // fetch user
+        let __user;
+
+        if (validatedData.get === "all") {
+            __user = await User.query().where("fid", validatedData.fid).first();
+        } else if (validatedData.get === "my_nagarik") {
+            const _allocation = await UserAllocation.query().where("allocated_to", user.id).orWhere("verified_by", user.id).preload("user");
+            __user = _allocation.map((allocation) => allocation.user).find((user) => user.fid === validatedData.fid);
+        } else if (validatedData.get === "family") {
+            let familyGroup: Group;
+
+            await user.load("groups", (query) => {
+                query.where("type", GroupTypes.FAMILY);
+            });
+
+            if (user.groups.length > 0) {
+                familyGroup = user.groups[0];
+            } else {
+                await user.load("familyGroup");
+                familyGroup = user.familyGroup;
+            }
+
+            if (familyGroup) {
+                await familyGroup.load("users", (query) => {
+                    query.where("fid", validatedData.fid);
+                });
+                __user = familyGroup.users[0];
+            }
+        }
+
+        if (!__user) return Responses.sendNotFoundResponse(response, "User not found");
+
+        await __user.load("profile");
+
+        return response.status(200).json(Responses.createResponse(__user.serialize({
+            fields: { pick: ["uuid", "user_type", "phone_number"] },
+            relations: {
+                profile: { fields: { pick: ["first_name", "last_name", "full_name", "initials_and_last_name", "avatar_url"] } },
+            },
+        }), [ResponseCodes.SUCCESS_WITH_DATA], "User fetched"));
     }
 }

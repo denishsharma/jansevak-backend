@@ -1,5 +1,5 @@
 import { DateTime } from "luxon";
-import { BaseModel, belongsTo, column, BelongsTo } from "@ioc:Adonis/Lucid/Orm";
+import { BaseModel, belongsTo, BelongsTo, column, computed } from "@ioc:Adonis/Lucid/Orm";
 import Profile from "App/Models/Profile";
 
 export default class Address extends BaseModel {
@@ -44,4 +44,14 @@ export default class Address extends BaseModel {
 
     @belongsTo(() => Profile)
     public profile: BelongsTo<typeof Profile>;
+
+    @computed({ serializeAs: "full_address" })
+    public get fullAddress() {
+        // addressLineTwo is optional and current not using city
+        const address = [this.addressLineOne, this.district, this.pincode, this.state];
+        if (this.addressLineTwo) {
+            address.splice(1, 0, this.addressLineTwo);
+        }
+        return address.join(", ");
+    }
 }

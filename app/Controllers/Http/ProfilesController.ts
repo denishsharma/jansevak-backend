@@ -4,7 +4,7 @@ import Responses, { ResponseCodes } from "App/Helpers/Responses";
 import console from "console";
 import { rules, schema, validator } from "@ioc:Adonis/Core/Validator";
 import ValidationException from "App/Exceptions/ValidationException";
-import { ProfileDataInterface, ProfileDataSchema, UpdateProfileDataInterface, UpdateProfileDataSchema, UserDataSchema } from "App/Helpers/Validators";
+import { ProfileDataSchema, UpdateProfileDataInterface, UpdateProfileDataSchema, UserDataSchema } from "App/Helpers/Validators";
 import User from "App/Models/User";
 import Ward from "App/Models/Ward";
 import Drive from "@ioc:Adonis/Core/Drive";
@@ -12,6 +12,9 @@ import UnknownErrorException from "App/Exceptions/UnknownErrorException";
 import Attachment from "App/Models/Attachment";
 import { PolymorphicType } from "App/Helpers/Polymorphism";
 import Profile from "App/Models/Profile";
+import UserAllocation from "App/Models/UserAllocation";
+import UserQuery from "App/Models/UserQuery";
+import { QueryStatuses } from "App/Helpers/Queries";
 
 export default class ProfilesController {
     public async updateProfile({ auth, request, response, params }: HttpContextContract) {
@@ -209,6 +212,120 @@ export default class ProfilesController {
         return response.status(200).json(Responses.createResponse(validatedData, [], "Profile setup completed"));
     }
 
+    public async getProfileSummary({ auth, response, params }: HttpContextContract) {
+        // check if user is authenticated
+        const user = await getLoggedInUser(auth);
+        if (!user) return Responses.sendUnauthenticatedResponse(response);
+
+        // check if user is authorized to get profile summary
+        /* Write Logic Here */
+
+        // validate request with validator and schema
+        let validatedData: { user_id: string; };
+        try {
+            validatedData = await validator.validate({
+                schema: schema.create({
+                    user_id: schema.string({ trim: true }, [rules.uuid(), rules.exists({
+                        table: "users",
+                        column: "uuid",
+                        where: { deleted_at: null },
+                    })]),
+                }),
+                data: { user_id: params.id },
+            });
+        } catch (e) {
+            throw new ValidationException(e.message, e.messages);
+        }
+
+        // get user to get profile summary
+        const userToGetProfileSummary = await User.query().where("uuid", validatedData.user_id).preload("profile", (query) => {
+            query.preload("address");
+        }).preload("allocation", (query) => {
+            query.preload("wardUser");
+            query.preload("allocatedToUser", (query) => {
+                query.preload("profile");
+            });
+        }).first();
+        if (!userToGetProfileSummary) return Responses.sendNotFoundResponse(response, "User not found");
+
+        const summaryStats = {
+            rating: 0,
+            nagarik: 0,
+            queries: 0,
+            pending: 0,
+            resolved: 0,
+            inProgress: 0,
+        };
+
+        // get queries assigned to user to get profile summary
+        const queriesAssigned = await UserQuery.query().where("for_jansevak", userToGetProfileSummary.id).orWhere("created_by", userToGetProfileSummary.id).orWhere("on_behalf_of", userToGetProfileSummary.id).preload("query");
+
+        // check if user to get profile summary is Jansevak or Admin
+        if (userToGetProfileSummary.userType === UserTypes.JANSEVAK || userToGetProfileSummary.userType === UserTypes.ADMIN) {
+            // get user allocations
+            const nagarikOnboarded = await UserAllocation.query().where("allocated_to", userToGetProfileSummary.id).orWhere("created_by", userToGetProfileSummary.id);
+
+            summaryStats.nagarik = nagarikOnboarded.length;
+        }
+
+        // get resolved queries and pending queries (which are not resolved or rejected) and queries in progress
+        const resolvedQueries = queriesAssigned.filter((query) => query.query.status === QueryStatuses.RESOLVED);
+        const pendingQueries = queriesAssigned.filter((query) => query.query.status !== QueryStatuses.RESOLVED && query.query.status !== QueryStatuses.REJECTED);
+        const inProgressQueries = queriesAssigned.filter((query) => query.query.status === QueryStatuses.IN_PROGRESS);
+
+        summaryStats.queries = queriesAssigned.length;
+        summaryStats.resolved = resolvedQueries.length;
+        summaryStats.pending = pendingQueries.length;
+        summaryStats.inProgress = inProgressQueries.length;
+
+        return response.status(200).json(Responses.createResponse({
+            user: userToGetProfileSummary.serialize({
+                fields: {
+                    omit: ["email", "deleted_at", "updated_at", "is_registered", "email_verified_at", "last_login_at"],
+                },
+                relations: {
+                    profile: {
+                        fields: {
+                            omit: ["deleted_at", "created_at", "updated_at"],
+                        },
+                        relations: {
+                            address: {
+                                fields: {
+                                    omit: ["deleted_at", "created_at", "updated_at"],
+                                },
+                            },
+                        },
+                    },
+                    allocation: {
+                        fields: {
+                            pick: ["verification", "verified_at", "ward"],
+                        },
+                        relations: {
+                            ward: {
+                                fields: {
+                                    pick: ["code", "name"],
+                                },
+                            },
+                            allocatedToUser: {
+                                fields: {
+                                    pick: ["uuid", "phone_number", "user_type"],
+                                },
+                                relations: {
+                                    profile: {
+                                        fields: {
+                                            pick: ["first_name", "last_name", "full_name", "initials_and_last_name", "avatar_url"],
+                                        },
+                                    },
+                                },
+                            },
+                        },
+                    },
+                },
+            }),
+            stats: summaryStats,
+        }, [], "Profile summary fetched successfully"));
+    }
+
     public async showProfile({ response, auth, params }: HttpContextContract) {
         // check if user is authenticated
         const user = await getLoggedInUser(auth);
@@ -231,7 +348,7 @@ export default class ProfilesController {
                     "user_id.uuid": "User ID is not a valid UUID",
                     "user_id.exists": "User ID does not exist",
                 },
-                reporter: validator.reporters.api,
+                reporter: validator.reporters.jsonapi,
             });
         } catch (e) {
             throw new ValidationException(e.message, e.messages);

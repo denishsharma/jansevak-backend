@@ -372,7 +372,7 @@ export default class GroupsController {
                     "group_id.exists": "Group not found",
                     "group_id.uuid": "Group id is not valid UUID",
                 },
-                reporter: validator.reporters.api,
+                reporter: validator.reporters.jsonapi,
             });
         } catch (e) {
             throw new ValidationException(e.message, e.messages);
@@ -433,7 +433,7 @@ export default class GroupsController {
                     "user_id.exists": "User not found",
                     "user_id.uuid": "User id is not valid UUID",
                 },
-                reporter: validator.reporters.api,
+                reporter: validator.reporters.jsonapi,
             });
         } catch (e) {
             throw new ValidationException(e.message, e.messages);
@@ -495,7 +495,7 @@ export default class GroupsController {
                     "users.*.exists": "Users not found",
                     "users.*.is_verified": "Only verified users can be added to a group",
                 },
-                reporter: validator.reporters.api,
+                reporter: validator.reporters.jsonapi,
             });
         } catch (e) {
             throw new ValidationException(e.message, e.messages);
@@ -527,7 +527,7 @@ export default class GroupsController {
                     "user.exists": "User does not exist",
                     "user.is_verified": "Only verified users can be added to a group",
                 },
-                reporter: validator.reporters.api,
+                reporter: validator.reporters.jsonapi,
             });
         } catch (e) {
             throw new ValidationException(e.message, e.messages);
