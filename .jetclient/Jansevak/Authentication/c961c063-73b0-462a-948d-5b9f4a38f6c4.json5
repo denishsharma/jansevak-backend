@@ -1,0 +1,23 @@
+{
+    id: "c961c063-73b0-462a-948d-5b9f4a38f6c4",
+    name: "Authentication",
+    icon: "FOLDER",
+    sortWeight: 1000000,
+    requests: [
+        {
+            id: "4917577d-590f-453c-9374-e8bf6b3e44fc",
+            name: "Get Authenticated User",
+            method: "POST",
+            url: "http://{{host}}:{{port}}/{{api}}/auth/me",
+            headers: [
+                {
+                    key: "Content-Type",
+                    value: "application/octet-stream"
+                }
+            ],
+            body: {
+                type: "BINARY_FILE"
+            }
+        }
+    ]
+}

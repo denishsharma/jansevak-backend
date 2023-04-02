@@ -1,0 +1,20 @@
+{
+    id: "31aa5cb1-6916-481d-abc4-c990c93942f5",
+    name: "Query",
+    icon: "FOLDER",
+    sortWeight: 1000000,
+    requests: [
+        {
+            id: "bd8e5e29-f2c1-4c27-8863-8f5de044db9b",
+            name: "Query status overview",
+            method: "GET",
+            url: "http://{{host}}:{{port}}/{{api}}/stats/query-status/:userId",
+            pathVariables: [
+                {
+                    key: "userId",
+                    value: "2a18f444-1072-47f5-a31f-c9397cd6bbe5"
+                }
+            ]
+        }
+    ]
+}

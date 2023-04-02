@@ -1,0 +1,76 @@
+{
+    id: "0cd9e20b-d094-4cb8-92d5-4279acd44c45",
+    name: "Announcement",
+    icon: "FOLDER",
+    sortWeight: 7000000,
+    requests: [
+        {
+            id: "e9423e0d-29b0-4d05-970c-51fdfb39ad7d",
+            name: "Create new announcement",
+            method: "POST",
+            url: "http://{{host}}:{{port}}/{{api}}/announcement/create",
+            body: {
+                type: "FORM_DATA",
+                formData: [
+                    {
+                        type: "TEXT",
+                        key: "form",
+                        value: "{\n    \"subject\": \"Announcement Subjec 122t 1\",\n    \"content\": \"Content of announcement\",\n    \"publish\": true\n}",
+                        disabled: false
+                    }
+                ]
+            }
+        },
+        {
+            id: "8682dfc1-411e-4977-a56e-02600749f46d",
+            name: "Get single announcement",
+            method: "GET",
+            url: "http://{{host}}:{{port}}/{{api}}/announcement/show/:slug",
+            pathVariables: [
+                {
+                    key: "slug",
+                    value: "announcement-subject-4-imhu",
+                    description: "Slug of announcements"
+                }
+            ]
+        },
+        {
+            id: "06d88c31-00ec-4c8d-ac4e-5097d3062eea",
+            name: "Get list of announcements",
+            method: "GET",
+            url: "http://{{host}}:{{port}}/{{api}}/announcement/list",
+            queryParams: [
+                {
+                    key: "p",
+                    value: "3",
+                    description: "Past N days",
+                    disabled: true
+                },
+                {
+                    key: "sd",
+                    value: "2023-03-01",
+                    description: "Start date",
+                    disabled: true
+                },
+                {
+                    key: "ed",
+                    value: "2023-03-10",
+                    description: "End date",
+                    disabled: true
+                },
+                {
+                    key: "withArchived",
+                    value: "true",
+                    description: "Flag to fetch with archived announcements",
+                    disabled: true
+                },
+                {
+                    key: "withUnpublished",
+                    value: "true",
+                    description: "Flag to fetch with unpublished announcements",
+                    disabled: true
+                }
+            ]
+        }
+    ]
+}

@@ -1,0 +1,50 @@
+{
+    id: "37c15446-2482-460b-96c5-6c1ff5a5f5a0",
+    name: "Login",
+    icon: "FOLDER",
+    sortWeight: 1000000,
+    requests: [
+        {
+            id: "0e2e13cd-cd92-4f3a-ad99-cdef10ee6aa2",
+            name: "Phone Number & OTP",
+            method: "POST",
+            url: "http://{{host}}:{{port}}/{{api}}/auth/login",
+            headers: [
+                {
+                    key: "Content-Type",
+                    value: "application/json"
+                }
+            ],
+            auth: {
+                type: "NO_AUTH"
+            },
+            body: {
+                type: "JSON",
+                raw: '{\
+  "mode": "otp",\
+  "phone_number": "5325850482"\
+}'
+            }
+        },
+        {
+            id: "6f4c8ef7-54fd-4db8-981a-632ebf081f7c",
+            name: "Phone Number and Password",
+            method: "POST",
+            url: "http://{{host}}:{{port}}/{{api}}/auth/login",
+            headers: [
+                {
+                    key: "Content-Type",
+                    value: "application/json"
+                }
+            ],
+            body: {
+                type: "JSON",
+                raw: '{\
+    "mode": "password",\
+    "phone_number": "8355892633",\
+    "password": "12345678"\
+}'
+            }
+        }
+    ]
+}

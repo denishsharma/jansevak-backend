@@ -1,22 +1,21 @@
-import type { HttpContextContract } from "@ioc:Adonis/Core/HttpContext";
-import Responses, { ResponseCodes } from "App/Helpers/Responses";
-import { rules, schema, validator } from "@ioc:Adonis/Core/Validator";
-import User from "App/Models/User";
-import { getLoggedInUser, OtpTypes, UserTypes, UserVerificationStatuses, verifyOTP } from "App/Helpers/Authentication";
-import ValidationException from "App/Exceptions/ValidationException";
-import Ward from "App/Models/Ward";
-import { DateTime } from "luxon";
-import CreateNagarikValidator, { CreateNagarikSchema } from "App/Validators/CreateNagarikValidator";
-import Attachment from "App/Models/Attachment";
-import { PolymorphicType } from "App/Helpers/Polymorphism";
-import UnknownErrorException from "App/Exceptions/UnknownErrorException";
-import console from "console";
 import Drive from "@ioc:Adonis/Core/Drive";
-import { CreateJansevakDataSchema, CreateJansevakDataSchemaMessages } from "App/Helpers/Validators";
-import UserAllocation from "App/Models/UserAllocation";
-import Hash from "@ioc:Adonis/Core/Hash";
-import Group from "App/Models/Group";
+import type { HttpContextContract } from "@ioc:Adonis/Core/HttpContext";
+import { rules, schema, validator } from "@ioc:Adonis/Core/Validator";
+import UnknownErrorException from "App/Exceptions/UnknownErrorException";
+import ValidationException from "App/Exceptions/ValidationException";
+import { getLoggedInUser, OtpTypes, UserTypes, UserVerificationStatuses, verifyOTP } from "App/Helpers/Authentication";
 import { GroupTypes } from "App/Helpers/Groups";
+import { PolymorphicType } from "App/Helpers/Polymorphism";
+import Responses, { ResponseCodes } from "App/Helpers/Responses";
+import { CreateJansevakDataSchema, CreateJansevakDataSchemaMessages } from "App/Helpers/Validators";
+import Attachment from "App/Models/Attachment";
+import Group from "App/Models/Group";
+import User from "App/Models/User";
+import UserAllocation from "App/Models/UserAllocation";
+import Ward from "App/Models/Ward";
+import CreateNagarikValidator, { CreateNagarikSchema } from "App/Validators/CreateNagarikValidator";
+import console from "console";
+import { DateTime } from "luxon";
 
 export default class UsersController {
     /**
@@ -52,7 +51,8 @@ export default class UsersController {
         user.password = validatedData.password;
         await user.save();
 
-        return response.status(200).json(Responses.createResponse({}, [ResponseCodes.PASSWORD_RESET_DONE], "User password updated"));
+        return response.status(200)
+                       .json(Responses.createResponse({}, [ResponseCodes.PASSWORD_RESET_DONE], "User password updated"));
     }
 
     /**
@@ -67,13 +67,15 @@ export default class UsersController {
         const user = auth.use("jwt").user;
 
         if (!user) {
-            return response.status(401).json(Responses.createResponse({}, [ResponseCodes.USER_NOT_AUTHENTICATED], "User not authenticated"));
+            return response.status(401)
+                           .json(Responses.createResponse({}, [ResponseCodes.USER_NOT_AUTHENTICATED], "User not authenticated"));
         }
 
         const { email } = request.only(["email"]);
 
         if (!email) {
-            return response.status(400).json(Responses.createResponse({}, [ResponseCodes.EMAIL_NOT_PROVIDED], "Email not provided"));
+            return response.status(400)
+                           .json(Responses.createResponse({}, [ResponseCodes.EMAIL_NOT_PROVIDED], "Email not provided"));
         }
 
         if (!validator.isEmail(email)) {
@@ -83,7 +85,8 @@ export default class UsersController {
         user.email = email;
         await user.save();
 
-        return response.status(200).json(Responses.createResponse({}, [ResponseCodes.USER_UPDATED], "User email updated"));
+        return response.status(200)
+                       .json(Responses.createResponse({}, [ResponseCodes.USER_UPDATED], "User email updated"));
     }
 
 
@@ -190,14 +193,16 @@ export default class UsersController {
         // create user allocation
         await newNagarikUser.related("allocation").create({
             wardId: await Ward.query().where("code", validatedData.user.ward).firstOrFail().then((ward) => ward.id),
-            allocatedTo: await User.query().where("uuid", validatedData.user.jansevak).firstOrFail().then((user) => user.id),
+            allocatedTo: await User.query().where("uuid", validatedData.user.jansevak).firstOrFail()
+                                   .then((user) => user.id),
             verifiedBy: user.id,
             createdBy: user.id,
             verification: UserVerificationStatuses.VERIFIED,
             verifiedAt: DateTime.now(),
         });
 
-        return response.status(200).json(Responses.createResponse(newNagarikUser, [ResponseCodes.USER_CREATED], "New Nagarik created"));
+        return response.status(200)
+                       .json(Responses.createResponse(newNagarikUser, [ResponseCodes.USER_CREATED], "New Nagarik created"));
     }
 
     public async newJansevak({ auth, response, request }: HttpContextContract) {
@@ -293,7 +298,8 @@ export default class UsersController {
             verifiedAt: DateTime.now(),
         });
 
-        return response.status(200).json(Responses.createResponse(newJansevakUser, [ResponseCodes.USER_CREATED], "New Jansevak created"));
+        return response.status(200)
+                       .json(Responses.createResponse(newJansevakUser, [ResponseCodes.USER_CREATED], "New Jansevak created"));
     }
 
     public async getJansevaks({ auth, response, request }: HttpContextContract) {
@@ -356,11 +362,12 @@ export default class UsersController {
 
 
             // get ward jansevaks
-            const wardJansevaks = await UserAllocation.query().where("ward_id", user.allocation.wardId).whereHas("user", (query) => {
-                query.where("user_type", UserTypes.JANSEVAK);
-            }).preload("user", (query) => {
-                query.preload("profile");
-            });
+            const wardJansevaks = await UserAllocation.query().where("ward_id", user.allocation.wardId)
+                                                      .whereHas("user", (query) => {
+                                                          query.where("user_type", UserTypes.JANSEVAK);
+                                                      }).preload("user", (query) => {
+                    query.preload("profile");
+                });
 
             // filter out my jansevak if exists
             let filteredWardJansevaks = wardJansevaks;
@@ -384,11 +391,12 @@ export default class UsersController {
         if (validatedData.ward) {
             const givenWard = await Ward.findBy("code", validatedData.ward);
             if (givenWard) {
-                const givenWardJansevaks = await UserAllocation.query().where("ward_id", givenWard.id).whereHas("user", (query) => {
-                    query.where("user_type", UserTypes.JANSEVAK);
-                }).preload("user", (query) => {
-                    query.preload("profile");
-                });
+                const givenWardJansevaks = await UserAllocation.query().where("ward_id", givenWard.id)
+                                                               .whereHas("user", (query) => {
+                                                                   query.where("user_type", UserTypes.JANSEVAK);
+                                                               }).preload("user", (query) => {
+                        query.preload("profile");
+                    });
 
                 // add given ward jansevaks if exists
                 if (givenWardJansevaks.length > 0) {
@@ -402,8 +410,262 @@ export default class UsersController {
             }
         }
 
-        return response.status(200).json(Responses.createResponse(jansevakObject, [ResponseCodes.SUCCESS_WITH_DATA], "Jansevak fetched"));
+        return response.status(200)
+                       .json(Responses.createResponse(jansevakObject, [ResponseCodes.SUCCESS_WITH_DATA], "Jansevak fetched"));
 
+    }
+
+    public async getAllNagariks({ auth, response, request }: HttpContextContract) {
+        // check if user is authenticated
+        let user = await getLoggedInUser(auth);
+        if (!user) return Responses.sendUnauthenticatedResponse(response);
+
+        // check if user is authorized to get all nagariks
+        /* Write Logic Here */
+
+        const { only } = request.qs();
+
+        let validatedData: { only: string | undefined; };
+        try {
+            validatedData = await validator.validate({
+                schema: schema.create({
+                    only: schema.enum.optional(["verified", "notVerified", "setupCompleted", "notSetupCompleted"]),
+                }),
+                data: { only },
+                reporter: validator.reporters.jsonapi,
+            });
+        } catch (e) {
+            throw new ValidationException(e.message, e.messages);
+        }
+
+        const allNagariks = await User.query().where("user_type", UserTypes.NAGRIK).if(validatedData.only === "verified", (query) => {
+            query.where("is_verified", true);
+        }).if(validatedData.only === "notVerified", (query) => {
+            query.where("is_verified", false);
+        }).if(validatedData.only === "setupCompleted", (query) => {
+            query.where("is_setup_completed", true);
+        }).if(validatedData.only === "notSetupCompleted", (query) => {
+            query.where("is_setup_completed", false);
+        }).preload("profile");
+
+        return response.status(200).json(Responses.createResponse(allNagariks.map((user) => user.serialize({
+            fields: { pick: ["uuid", "fid", "user_type", "phone_number", "is_setup_completed", "is_verified", "is_archived"] },
+            relations: {
+                profile: { fields: { pick: ["first_name", "last_name", "full_name", "initials_and_last_name", "avatar_url"] } },
+            },
+        })), [ResponseCodes.SUCCESS_WITH_DATA], "All Nagariks fetched"));
+    }
+
+    public async getWardNagariks({ auth, response, params, request }: HttpContextContract) {
+        // check if user is authenticated
+        let user = await getLoggedInUser(auth);
+        if (!user) return Responses.sendUnauthenticatedResponse(response);
+
+        // check if user is authorized to get ward nagariks
+        /* Write Logic Here */
+
+        const { wardId } = params;
+        const { only } = request.qs();
+
+        // validate ward id
+        let validatedData: { wardId: string };
+        try {
+            validatedData = await validator.validate({
+                schema: schema.create({
+                    wardId: schema.string({ trim: true }, [rules.exists({
+                        table: "wards",
+                        column: "code",
+                        where: { deleted_at: null },
+                    })]),
+                    only: schema.enum.optional(["verified", "notVerified", "setupCompleted", "notSetupCompleted"]),
+                }),
+                data: { wardId, only },
+                reporter: validator.reporters.jsonapi,
+            });
+        } catch (e) {
+            throw new ValidationException(e.message, e.messages);
+        }
+
+        const ward = await Ward.findByOrFail("code", validatedData.wardId);
+
+        const wardNagariks = await User.query().where("user_type", UserTypes.NAGRIK).whereHas("allocation", (query) => {
+            query.where("ward_id", ward.id);
+        }).if(only === "verified", (query) => {
+            query.where("is_verified", true);
+        }).if(only === "notVerified", (query) => {
+            query.where("is_verified", false);
+        }).if(only === "setupCompleted", (query) => {
+            query.where("is_setup_completed", true);
+        }).if(only === "notSetupCompleted", (query) => {
+            query.where("is_setup_completed", false);
+        }).preload("profile");
+
+        return response.status(200).json(Responses.createResponse(wardNagariks.map((user) => user.serialize({
+            fields: { pick: ["uuid", "fid", "user_type", "phone_number", "is_setup_completed", "is_verified", "is_archived"] },
+            relations: {
+                profile: { fields: { pick: ["first_name", "last_name", "full_name", "initials_and_last_name", "avatar_url"] } },
+            },
+        })), [ResponseCodes.SUCCESS_WITH_DATA], "Ward Nagariks fetched"));
+    }
+
+    public async getAssignedNagariks({ auth, response, params, request }: HttpContextContract) {
+        // check if user is authenticated
+        let user = await getLoggedInUser(auth);
+        if (!user) return Responses.sendUnauthenticatedResponse(response);
+
+        // check if user is authorized to get assigned nagariks
+        /* Write Logic Here */
+
+        const { assignedToId } = params;
+        const { only } = request.qs();
+
+        // validate assigned to id
+        let validatedData: { assignedToId: string };
+        try {
+            validatedData = await validator.validate({
+                schema: schema.create({
+                    assignedToId: schema.string({ trim: true }, [rules.uuid(), rules.exists({
+                        table: "users",
+                        column: "uuid",
+                        where: { deleted_at: null },
+                    })]),
+                    only: schema.enum.optional(["verified", "notVerified", "setupCompleted", "notSetupCompleted"]),
+                }),
+                data: { assignedToId, only },
+                reporter: validator.reporters.jsonapi,
+            });
+        } catch (e) {
+            throw new ValidationException(e.message, e.messages);
+        }
+
+        const assignedTo = await User.findByOrFail("uuid", validatedData.assignedToId);
+
+        const assignedNagariks = await User.query().where("user_type", UserTypes.NAGRIK).whereHas("allocation", (query) => {
+            query.where("allocated_to", assignedTo.id);
+        }).if(only === "verified", (query) => {
+            query.where("is_verified", true);
+        }).if(only === "notVerified", (query) => {
+            query.where("is_verified", false);
+        }).if(only === "setupCompleted", (query) => {
+            query.where("is_setup_completed", true);
+        }).if(only === "notSetupCompleted", (query) => {
+            query.where("is_setup_completed", false);
+        }).preload("profile");
+
+        return response.status(200).json(Responses.createResponse(assignedNagariks.map((user) => user.serialize({
+            fields: { pick: ["uuid", "fid", "user_type", "phone_number", "is_setup_completed", "is_verified", "is_archived"] },
+            relations: {
+                profile: { fields: { pick: ["first_name", "last_name", "full_name", "initials_and_last_name", "avatar_url"] } },
+            },
+        })), [ResponseCodes.SUCCESS_WITH_DATA], "Assigned Nagariks fetched"));
+    }
+
+    public async getAllJansevaks({ auth, response }: HttpContextContract) {
+        // check if user is authenticated
+        let user = await getLoggedInUser(auth);
+        if (!user) return Responses.sendUnauthenticatedResponse(response);
+
+        // check if user is authorized to get all jansevaks
+        /* Write Logic Here */
+
+        const jansevaks = await User.query().where("user_type", UserTypes.JANSEVAK).preload("profile");
+
+        return response.status(200).json(Responses.createResponse(jansevaks.map((user) => user.serialize({
+            fields: { pick: ["uuid", "fid", "user_type", "phone_number", "is_setup_completed", "is_verified", "is_archived"] },
+            relations: {
+                profile: { fields: { pick: ["first_name", "last_name", "full_name", "initials_and_last_name", "avatar_url"] } },
+            },
+        })), [ResponseCodes.SUCCESS_WITH_DATA], "All Jansevaks fetched"));
+    }
+
+    public async getWardJansevaks({ auth, response, params }: HttpContextContract) {
+        // check if user is authenticated
+        let user = await getLoggedInUser(auth);
+        if (!user) return Responses.sendUnauthenticatedResponse(response);
+
+        // check if user is authorized to get ward jansevaks
+        /* Write Logic Here */
+
+        const { wardId } = params;
+
+        // validate ward id
+        let validatedData: { wardId: string };
+        try {
+            validatedData = await validator.validate({
+                schema: schema.create({
+                    wardId: schema.string({ trim: true }, [rules.exists({
+                        table: "wards",
+                        column: "code",
+                        where: { deleted_at: null },
+                    })]),
+                }),
+                data: { wardId },
+                reporter: validator.reporters.jsonapi,
+            });
+        } catch (e) {
+            throw new ValidationException(e.message, e.messages);
+        }
+
+        const ward = await Ward.findByOrFail("code", validatedData.wardId);
+
+        const wardJansevaks = await User.query().where("user_type", UserTypes.JANSEVAK).whereHas("allocation", (query) => {
+            query.where("ward_id", ward.id);
+        }).preload("profile");
+
+        return response.status(200).json(Responses.createResponse(wardJansevaks.map((user) => user.serialize({
+            fields: { pick: ["uuid", "fid", "user_type", "phone_number", "is_setup_completed", "is_verified", "is_archived"] },
+            relations: {
+                profile: { fields: { pick: ["first_name", "last_name", "full_name", "initials_and_last_name", "avatar_url"] } },
+            },
+        })), [ResponseCodes.SUCCESS_WITH_DATA], "Ward Jansevaks fetched"));
+    }
+
+    public async getAssignedJansevak({ auth, response, params }: HttpContextContract) {
+        // check if user is authenticated
+        let user = await getLoggedInUser(auth);
+        if (!user) return Responses.sendUnauthenticatedResponse(response);
+
+        // check if user is authorized to get assigned jansevak
+        /* Write Logic Here */
+
+        const { assignedToId } = params;
+
+        // validate assigned to id
+        let validatedData: { assignedToId: string };
+        try {
+            validatedData = await validator.validate({
+                schema: schema.create({
+                    assignedToId: schema.string({ trim: true }, [rules.uuid(), rules.exists({
+                        table: "users",
+                        column: "uuid",
+                        where: { deleted_at: null },
+                    })]),
+                }),
+                data: { assignedToId },
+                reporter: validator.reporters.jsonapi,
+            });
+        } catch (e) {
+            throw new ValidationException(e.message, e.messages);
+        }
+
+        const assignedTo = await User.findByOrFail("uuid", validatedData.assignedToId);
+        await assignedTo.load("allocation", (query) => {
+            query.preload("allocatedToUser", (query) => {
+                query.preload("profile");
+            });
+        });
+
+        // get assigned jansevak for the user assigned to
+        const assignedJansevak = assignedTo.allocation?.allocatedToUser;
+
+        if (!assignedJansevak) return response.status(200).json(Responses.createResponse(null, [ResponseCodes.SUCCESS_WITH_NO_DATA], "Assigned Jansevak not found"));
+
+        return response.status(200).json(Responses.createResponse(assignedJansevak.serialize({
+            fields: { pick: ["uuid", "fid", "user_type", "phone_number", "is_setup_completed", "is_verified", "is_archived"] },
+            relations: {
+                profile: { fields: { pick: ["first_name", "last_name", "full_name", "initials_and_last_name", "avatar_url"] } },
+            },
+        }), [ResponseCodes.SUCCESS_WITH_DATA], "Assigned Jansevak fetched"));
     }
 
     public async getUserByFid({ auth, response, params, request }: HttpContextContract) {
@@ -441,7 +703,8 @@ export default class UsersController {
         if (validatedData.get === "all") {
             __user = await User.query().where("fid", validatedData.fid).first();
         } else if (validatedData.get === "my_nagarik") {
-            const _allocation = await UserAllocation.query().where("allocated_to", user.id).orWhere("verified_by", user.id).preload("user");
+            const _allocation = await UserAllocation.query().where("allocated_to", user.id)
+                                                    .orWhere("verified_by", user.id).preload("user");
             __user = _allocation.map((allocation) => allocation.user).find((user) => user.fid === validatedData.fid);
         } else if (validatedData.get === "family") {
             let familyGroup: Group;

@@ -1,0 +1,60 @@
+{
+    id: "ec693b09-1562-4891-8f89-71ec8314219e",
+    name: "Show Query",
+    icon: "FOLDER",
+    sortWeight: 1000000,
+    requests: [
+        {
+            id: "5eb32223-8b39-4829-aa27-c764c52060c5",
+            name: "Get all details",
+            method: "GET",
+            url: "http://{{host}}:{{port}}/{{api}}/query/show/:id",
+            pathVariables: [
+                {
+                    key: "id",
+                    value: "407565ad-af4d-4302-8768-891e958ffccd",
+                    description: "Query id"
+                }
+            ]
+        },
+        {
+            id: "5be62225-77e2-452f-8f11-7c9b38e46bb3",
+            name: "Get query info",
+            method: "GET",
+            url: "http://{{host}}:{{port}}/{{api}}/query/show/:id/info",
+            pathVariables: [
+                {
+                    key: "id",
+                    value: "22e2681c-f3c4-4caa-93d5-574cd9f4b351",
+                    description: "Query id"
+                }
+            ]
+        },
+        {
+            id: "49fb2777-3c16-430d-83a3-64020760d772",
+            name: "Get query attachments",
+            method: "GET",
+            url: "http://{{host}}:{{port}}/{{api}}/query/show/:id/attachments",
+            pathVariables: [
+                {
+                    key: "id",
+                    value: "22e2681c-f3c4-4caa-93d5-574cd9f4b351",
+                    description: "Query id"
+                }
+            ]
+        },
+        {
+            id: "3d87c7e7-8697-466a-a57c-291f823de430",
+            name: "Get query comments",
+            method: "GET",
+            url: "http://{{host}}:{{port}}/{{api}}/query/show/:id/comments",
+            pathVariables: [
+                {
+                    key: "id",
+                    value: "3d7694ae-1d62-482d-8267-3a180aa336e7",
+                    description: "Query id"
+                }
+            ]
+        }
+    ]
+}

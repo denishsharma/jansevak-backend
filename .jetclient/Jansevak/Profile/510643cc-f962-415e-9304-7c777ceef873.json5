@@ -1,0 +1,78 @@
+{
+    id: "510643cc-f962-415e-9304-7c777ceef873",
+    name: "Profile",
+    icon: "FOLDER",
+    sortWeight: 2000000,
+    requests: [
+        {
+            id: "1dcd69dc-e1ad-4361-aeb7-d282e8efc85b",
+            name: "Update profile data",
+            method: "POST",
+            url: "http://{{host}}:{{port}}/{{api}}/profile/update/:id",
+            pathVariables: [
+                {
+                    key: "id",
+                    value: "abae4d65-c1ee-4eda-ba0d-7a53360f94d5"
+                }
+            ],
+            body: {
+                type: "FORM_DATA",
+                formData: [
+                    {
+                        type: "TEXT",
+                        key: "user",
+                        value: "{\n    \"ward\": \"23199-635251826\",\n    \"jansevak\": \"73906cac-5697-46b2-ba31-f2b04bae0d52\"\n}",
+                        disabled: false
+                    },
+                    {
+                        type: "TEXT",
+                        key: "profile",
+                        value: "{\n    \"first_name\": \"denish\",\n    \"last_name\": \"sharma\",\n    \"gender\": \"male\",\n    \"email\": \"\",\n    \"birth_date\": \"\",\n    \"aadhar_number\": \"\",\n    \"voter_id_number\": \"\",\n    \"address\": {\n        \"address_line_1\": \"some where\",\n        \"address_line_2\": \"\",\n        \"pincode\": \"400080\",\n        \"district\": \"mumbai\",\n        \"city\": \"mumbai\",\n        \"state\": \"maharashtra\"\n    }\n}",
+                        disabled: false
+                    }
+                ]
+            }
+        },
+        {
+            id: "78dbcc4b-eac6-40c2-ad35-84bf209f9a09",
+            name: "Setup my profile",
+            method: "POST",
+            url: "http://{{host}}:{{port}}/{{api}}/profile/setup",
+            body: {
+                type: "FORM_DATA",
+                formData: [
+                    {
+                        type: "TEXT",
+                        key: "user",
+                        value: "{\n    \"ward\": \"23199-635251826\",\n    \"jansevak\": \"73906cac-5697-46b2-ba31-f2b04bae0d52\"\n}",
+                        disabled: false
+                    },
+                    {
+                        type: "TEXT",
+                        key: "profile",
+                        value: "{\n    \"first_name\": \"123denish\",\n    \"last_name\": \"sharma\",\n    \"gender\": \"male\",\n    \"email\": \"denishcommon@gmail.com\",\n    \"birth_date\": \"\",\n    \"aadhar_number\": \"\",\n    \"voter_id_number\": \"\",\n    \"address\": {\n        \"address_line_1\": \"some where\",\n        \"address_line_2\": \"\",\n        \"pincode\": \"400080\",\n        \"district\": \"mumbai\",\n        \"city\": \"mumbai\",\n        \"state\": \"maharashtra\"\n    }\n}",
+                        disabled: false
+                    }
+                ]
+            }
+        },
+        {
+            id: "83335ab1-6390-4c61-b9a5-7f0f284162e6",
+            name: "Show profile details",
+            method: "GET",
+            url: "http://{{host}}:{{port}}/{{api}}/profile/show/"
+        },
+        {
+            id: "d4db1c63-fba2-43b7-8a8c-057bdfe2f0ea",
+            name: "Get profile summary",
+            method: "GET",
+            url: "http://{{host}}:{{port}}/{{api}}/profile/summary/:id",
+            pathVariables: [
+                {
+                    key: "id",
+                    value: "46f15f50-0af6-4603-8cc2-d38f394b24cc"
+                }
+            ]
+        }
+    ]
+}

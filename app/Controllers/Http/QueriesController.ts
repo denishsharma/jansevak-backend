@@ -15,7 +15,6 @@ import { rules } from "@adonisjs/validator/build/src/Rules";
 import Group from "App/Models/Group";
 import { GroupTypes } from "App/Helpers/Groups";
 import QueryComment from "App/Models/QueryComment";
-import console from "console";
 
 export default class QueriesController {
 

@@ -1,0 +1,43 @@
+{
+    id: "5bfc9c3c-cf71-4fe5-89cc-8609d43cfd80",
+    name: "Nagarik",
+    icon: "FOLDER",
+    sortWeight: 1000000,
+    requests: [
+        {
+            id: "e63ce5f8-32c9-4c82-a4db-33de0680a3b9",
+            name: "Add new Nagarik",
+            method: "POST",
+            url: "http://{{host}}:{{port}}/{{api}}/user/nagarik/create",
+            headers: [
+                {
+                    key: "Content-Type",
+                    value: "multipart/form-data"
+                }
+            ],
+            body: {
+                type: "FORM_DATA",
+                formData: [
+                    {
+                        type: "TEXT",
+                        key: "user",
+                        value: "{\n    \"phone_number\": \"9876543210\",\n    \"ward\": \"2239839245\",\n    \"jansevak\": \"3fd96e38-1dff-4867-84f4-7e766d9c9702\"\n}",
+                        disabled: false
+                    },
+                    {
+                        type: "TEXT",
+                        key: "profile",
+                        value: "{\n    \"first_name\": \"denish\",\n    \"last_name\": \"sharma\",\n    \"gender\": \"male\",\n    \"email\": \"\",\n    \"birth_date\": \"\",\n    \"aadhar_number\": \"\",\n    \"voter_id_number\": \"\",\n    \"address\": {\n        \"address_line_1\": \"some where\",\n        \"address_line_2\": \"\",\n        \"pincode\": \"400080\",\n        \"district\": \"mumbai\",\n        \"city\": \"mumbai\",\n        \"state\": \"maharashtra\"\n    }\n}",
+                        disabled: false
+                    },
+                    {
+                        type: "TEXT",
+                        key: "cert",
+                        value: "{\n    \"otp\": \"946338\",\n    \"sig\": \"RkDGj3Ty01Cz59r/veoS4Tjd37oU+I+9Qcw+78c6+Ts74biUcdjuVyao4x974o07Oo5cizfykdcWWsBZgfFgf+T4W8ZHSzEtVEQeO21uwuK5MMnuNWjwjWPwEMlT+aCuF/AEe8up55BazXCqGzqikW4Z/UjWSQXasujmaKTvRcI=\"\n}",
+                        disabled: false
+                    }
+                ]
+            }
+        }
+    ]
+}

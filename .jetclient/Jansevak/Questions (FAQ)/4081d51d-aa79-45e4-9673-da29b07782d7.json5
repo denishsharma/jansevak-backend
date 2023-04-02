@@ -1,0 +1,17 @@
+{
+    id: "4081d51d-aa79-45e4-9673-da29b07782d7",
+    name: "Questions (FAQ)",
+    icon: "FOLDER",
+    sortWeight: 9000000,
+    requests: [
+        {
+            id: "efd29eaf-494f-4db9-80a0-2282d0dea993",
+            name: "Show all questions",
+            method: "GET",
+            url: "http://{{host}}:{{port}}/{{api}}/question/list",
+            auth: {
+                type: "NO_AUTH"
+            }
+        }
+    ]
+}

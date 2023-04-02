@@ -1,0 +1,23 @@
+{
+    id: "c7f620d5-c03b-47b4-8974-b49a81d1c02c",
+    name: "Certificates",
+    icon: "FOLDER",
+    sortWeight: 5000000,
+    requests: [
+        {
+            id: "ad909599-6dfe-4686-aa6d-267cee7ec505",
+            name: "New Nagarik CERT",
+            method: "POST",
+            url: "http://{{host}}:{{port}}/{{api}}/cert/new-nagarik",
+            body: {
+                type: "JSON",
+                raw: '{\
+    "requested_for": "9876543210",\
+    "payload": {\
+        "phone_number": "9876543210"\
+    }\
+}'
+            }
+        }
+    ]
+}

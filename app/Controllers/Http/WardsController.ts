@@ -1,9 +1,12 @@
-import type { HttpContextContract } from "@ioc:Adonis/Core/HttpContext";
-import Ward from "App/Models/Ward";
-import Responses, { ResponseCodes } from "App/Helpers/Responses";
-import slugify from "slugify";
 import { string } from "@ioc:Adonis/Core/Helpers";
+import type { HttpContextContract } from "@ioc:Adonis/Core/HttpContext";
+import { rules, schema, validator } from "@ioc:Adonis/Core/Validator";
+import ValidationException from "App/Exceptions/ValidationException";
 import { getLoggedInUser } from "App/Helpers/Authentication";
+import Responses, { ResponseCodes } from "App/Helpers/Responses";
+import User from "App/Models/User";
+import Ward from "App/Models/Ward";
+import slugify from "slugify";
 
 export default class WardsController {
     /**
@@ -32,8 +35,8 @@ export default class WardsController {
         if (!user) return Responses.sendUnauthenticatedResponse(response);
 
         // check if user is authorized to create ward
-        const allows = await bouncer.forUser(user).with("WardPolicy").allows("canWriteWard");
-        if (!allows) return Responses.sendUnauthorizedResponse(response);
+        // const allows = await bouncer.forUser(user).with("WardPolicy").allows("canWriteWard");
+        // if (!allows) return Responses.sendUnauthorizedResponse(response);
 
         // get ward name from request
         const { name } = request.only(["name"]);
@@ -58,30 +61,45 @@ export default class WardsController {
      * @param auth
      * @param bouncer
      * @param response
+     * @param params
      */
-    public async update({ request, auth, bouncer, response }: HttpContextContract) {
+    public async update({ request, auth, bouncer, response, params }: HttpContextContract) {
         // check if user is authenticated
         const user = await getLoggedInUser(auth);
         if (!user) return Responses.sendUnauthenticatedResponse(response);
 
         // check if user is authorized to update ward
-        const allows = await bouncer.forUser(user).with("WardPolicy").allows("canWriteWard");
-        if (!allows) return Responses.sendUnauthorizedResponse(response);
+        // const allows = await bouncer.forUser(user).with("WardPolicy").allows("canWriteWard");
+        // if (!allows) return Responses.sendUnauthorizedResponse(response);
 
-        // get ward name and code from request
-        const { name, code } = request.only(["name", "code"]);
+        // get ward name and code from request and params
+        const { wardId } = params;
+        const { name } = request.only(["name"]);
 
-        // check if ward name and code is provided
-        if (!name || !code) return Responses.sendInvalidRequestResponse(response, "Ward name and code is required");
+        // validate data
+        let validatedData: { wardId: string; name: string; };
+        try {
+            validatedData = await validator.validate({
+                schema: schema.create({
+                    wardId: schema.string({ trim: true }, [rules.exists({
+                        table: "wards",
+                        column: "code",
+                        where: { deleted_at: null },
+                    })]),
+                    name: schema.string({ trim: true }, [rules.minLength(3)]),
+                }),
+                data: { wardId, name },
+                reporter: validator.reporters.jsonapi,
+            });
+        } catch (e) {
+            throw new ValidationException(e.message, e.messages);
+        }
 
         // check if ward exists
-        const ward = await Ward.findBy("code", code);
-
-        // check if ward exists
-        if (!ward) return Responses.sendNotFoundResponse(response, "Ward not found");
+        const ward = await Ward.findByOrFail("code", validatedData.wardId);
 
         // update ward and return response
-        ward.name = name;
+        ward.name = validatedData.name;
         await ward.save();
 
         return response.status(200).send(Responses.createResponse(ward.serialize({
@@ -96,37 +114,53 @@ export default class WardsController {
      * @param bouncer
      * @param request
      */
-    public async getUsers({ response, auth, bouncer, request }: HttpContextContract) {
+    public async getUsers({ response, auth, bouncer, params }: HttpContextContract) {
         // check if user is authenticated
         const user = await getLoggedInUser(auth);
         if (!user) return Responses.sendUnauthenticatedResponse(response);
 
         // check if user is authorized to view ward users
-        const allows = await bouncer.forUser(user).with("WardPolicy").allows("canViewWardUsers");
-        if (!allows) return Responses.sendUnauthorizedResponse(response);
+        // const allows = await bouncer.forUser(user).with("WardPolicy").allows("canViewWardUsers");
+        // if (!allows) return Responses.sendUnauthorizedResponse(response);
 
-        // check if ward code is provided
-        const { ward_code } = request.only(["ward_code"]);
-        if (!ward_code) return Responses.sendInvalidRequestResponse(response, "Ward code is required");
+        // get ward code from params
+        const { wardId } = params;
+
+        // validate data
+        let validatedData: { wardId: string; };
+        try {
+            validatedData = await validator.validate({
+                schema: schema.create({
+                    wardId: schema.string({ trim: true }, [rules.exists({
+                        table: "wards",
+                        column: "code",
+                        where: { deleted_at: null },
+                    })]),
+                }),
+                data: { wardId },
+                reporter: validator.reporters.jsonapi,
+            });
+        } catch (e) {
+            throw new ValidationException(e.message, e.messages);
+        }
 
         // check if ward exists
-        const ward = await Ward.findBy("code", ward_code);
-        if (!ward) return Responses.sendNotFoundResponse(response, "Ward not found");
+        const ward = await Ward.findByOrFail("code", validatedData.wardId);
 
-        // load ward users
-        await ward.load("users", (userQuery) => {
-            userQuery.preload("profile");
-        });
+        // get ward users
+        const wardUsers = await User.query().whereHas("allocation", (allocation) => {
+            allocation.where("ward_id", ward.id);
+        }).preload("profile");
 
-        return response.status(200).send(Responses.createResponse(ward.serialize({
-            fields: { pick: ["name", "code"] },
+        // check if ward users exist
+        if (!wardUsers || wardUsers.length < 1) return Responses.sendNotFoundResponse(response, "Ward users not found");
+
+        return response.status(200).send(Responses.createResponse(wardUsers.map((wardUser) => wardUser.serialize({
+            fields: { pick: ["uuid", "fid", "user_type", "phone_number", "is_setup_completed", "is_verified", "is_archived"] },
             relations: {
-                users: {
-                    fields: { pick: ["uuid", "phone_number"] },
-                    relations: { profile: { fields: ["avatar_url", "first_name", "middle_name", "last_name", "email", "full_name", "initials_and_last_name"] } },
-                },
+                profile: { fields: { pick: ["first_name", "last_name", "full_name", "initials_and_last_name", "avatar_url"] } },
             },
-        }), [ResponseCodes.SUCCESS_WITH_DATA], "Ward users found"));
+        })), [ResponseCodes.SUCCESS_WITH_DATA], "Ward users retrieved"));
     }
 
     /**
@@ -134,30 +168,46 @@ export default class WardsController {
      * @param response
      * @param auth
      * @param bouncer
+     * @param params
      * @param request
      */
-    public async archive({ response, auth, bouncer, request }: HttpContextContract) {
+    public async archive({ response, auth, bouncer, params, request }: HttpContextContract) {
         // check if user is authenticated
         const user = await getLoggedInUser(auth);
         if (!user) return Responses.sendUnauthenticatedResponse(response);
 
         // check if user is authorized to create ward
-        const allows = await bouncer.forUser(user).with("WardPolicy").allows("canWriteWard");
-        if (!allows) return Responses.sendUnauthorizedResponse(response);
+        // const allows = await bouncer.forUser(user).with("WardPolicy").allows("canWriteWard");
+        // if (!allows) return Responses.sendUnauthorizedResponse(response);
 
         // check if ward code is provided
-        const { ward_code } = request.only(["ward_code"]);
+        const { wardId } = params;
         const { unarchive } = request.qs();
 
-        // check if ward code is provided
-        if (!ward_code || !ward_code.trim()) return Responses.sendInvalidRequestResponse(response, "Ward code is required");
+        // validate data
+        let validatedData: { wardId: string; unarchive: boolean | undefined; };
+        try {
+            validatedData = await validator.validate({
+                schema: schema.create({
+                    wardId: schema.string({ trim: true }, [rules.exists({
+                        table: "wards",
+                        column: "code",
+                    })]),
+                    unarchive: schema.boolean.optional(),
+                }),
+                data: { wardId, unarchive },
+                reporter: validator.reporters.jsonapi,
+            });
+        } catch (e) {
+            throw new ValidationException(e.message, e.messages);
+        }
 
         // check if ward exists
-        const ward = await Ward.withTrashed().where("code", ward_code).first();
+        const ward = await Ward.withTrashed().where("code", validatedData.wardId).first();
         if (!ward) return Responses.sendNotFoundResponse(response, "Ward not found");
 
         // check for unarchive flag
-        if (unarchive) {
+        if (validatedData.unarchive) {
             await ward.restore();
             return response.status(200).send(Responses.createResponse({}, [ResponseCodes.SUCCESS_WITH_NO_DATA], "Ward restored"));
         } else {

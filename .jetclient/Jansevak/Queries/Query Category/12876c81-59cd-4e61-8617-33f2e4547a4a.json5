@@ -1,0 +1,53 @@
+{
+    id: "12876c81-59cd-4e61-8617-33f2e4547a4a",
+    name: "Query Category",
+    icon: "FOLDER",
+    sortWeight: 1000000,
+    requests: [
+        {
+            id: "1e6fdfed-7cde-4705-b492-2f02c0c26aec",
+            name: "Create new query category",
+            method: "POST",
+            url: "http://{{host}}:{{port}}/{{api}}/query/category/create",
+            body: {
+                type: "JSON",
+                raw: '{\
+    "name": "Economic Concerns"\
+}'
+            }
+        },
+        {
+            id: "2b45fca5-c94c-4706-a189-b5a501a96984",
+            name: "List all categories",
+            method: "GET",
+            url: "http://{{host}}:{{port}}/{{api}}/query/category/list?withArchived=true",
+            queryParams: [
+                {
+                    key: "withArchived",
+                    value: "true"
+                }
+            ],
+            auth: {
+                type: "NO_AUTH"
+            }
+        },
+        {
+            id: "e0916197-8d2b-4b03-9645-aef4033d6d11",
+            name: "Archive category",
+            method: "POST",
+            url: "http://{{host}}:{{port}}/{{api}}/query/category/archive?unarchive=true",
+            queryParams: [
+                {
+                    key: "unarchive",
+                    value: "true"
+                }
+            ],
+            body: {
+                type: "JSON",
+                raw: '{\
+    "id": "13c44473-001a-4342-93c2-ccfeab802525"\
+}'
+            }
+        }
+    ]
+}

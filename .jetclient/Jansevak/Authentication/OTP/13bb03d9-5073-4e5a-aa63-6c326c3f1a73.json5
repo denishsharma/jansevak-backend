@@ -1,0 +1,36 @@
+{
+    id: "13bb03d9-5073-4e5a-aa63-6c326c3f1a73",
+    name: "OTP",
+    icon: "FOLDER",
+    sortWeight: 2000000,
+    requests: [
+        {
+            id: "9d39cc38-df66-4d26-a976-98a1e4107d33",
+            name: "Verify OTP",
+            method: "POST",
+            url: "http://{{host}}:{{port}}/{{api}}/auth/verify",
+            auth: {
+                type: "NO_AUTH"
+            },
+            body: {
+                type: "JSON",
+                raw: '{\
+    "user_uuid": "2a18f444-1072-47f5-a31f-c9397cd6bbe5",\
+    "otp": "480271"\
+}'
+            }
+        },
+        {
+            id: "d3215fa2-72dd-4707-ae14-22eefa4fa423",
+            name: "Generate OTP",
+            method: "POST",
+            url: "http://{{host}}:{{port}}/{{api}}/auth/generate-otp",
+            body: {
+                type: "JSON",
+                raw: '{\
+    "user_uuid": "69f044a0-545e-4514-90ea-c27db267ba04"\
+}'
+            }
+        }
+    ]
+}

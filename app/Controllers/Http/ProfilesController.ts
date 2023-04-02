@@ -1,20 +1,20 @@
-import type { HttpContextContract } from "@ioc:Adonis/Core/HttpContext";
-import { getLoggedInUser, UserTypes } from "App/Helpers/Authentication";
-import Responses, { ResponseCodes } from "App/Helpers/Responses";
-import console from "console";
-import { rules, schema, validator } from "@ioc:Adonis/Core/Validator";
-import ValidationException from "App/Exceptions/ValidationException";
-import { ProfileDataSchema, UpdateProfileDataInterface, UpdateProfileDataSchema, UserDataSchema } from "App/Helpers/Validators";
-import User from "App/Models/User";
-import Ward from "App/Models/Ward";
 import Drive from "@ioc:Adonis/Core/Drive";
+import type { HttpContextContract } from "@ioc:Adonis/Core/HttpContext";
+import { rules, schema, validator } from "@ioc:Adonis/Core/Validator";
 import UnknownErrorException from "App/Exceptions/UnknownErrorException";
-import Attachment from "App/Models/Attachment";
+import ValidationException from "App/Exceptions/ValidationException";
+import { getLoggedInUser, UserTypes } from "App/Helpers/Authentication";
+import { getAverageRatingForUser } from "App/Helpers/Feedbacks";
 import { PolymorphicType } from "App/Helpers/Polymorphism";
+import { QueryStatuses } from "App/Helpers/Queries";
+import Responses, { ResponseCodes } from "App/Helpers/Responses";
+import { ProfileDataSchema, UpdateProfileDataInterface, UpdateProfileDataSchema } from "App/Helpers/Validators";
+import Attachment from "App/Models/Attachment";
 import Profile from "App/Models/Profile";
+import User from "App/Models/User";
 import UserAllocation from "App/Models/UserAllocation";
 import UserQuery from "App/Models/UserQuery";
-import { QueryStatuses } from "App/Helpers/Queries";
+import Ward from "App/Models/Ward";
 
 export default class ProfilesController {
     public async updateProfile({ auth, request, response, params }: HttpContextContract) {
@@ -278,6 +278,8 @@ export default class ProfilesController {
         summaryStats.pending = pendingQueries.length;
         summaryStats.inProgress = inProgressQueries.length;
 
+        summaryStats.rating = await getAverageRatingForUser(userToGetProfileSummary);
+
         return response.status(200).json(Responses.createResponse({
             user: userToGetProfileSummary.serialize({
                 fields: {
@@ -406,12 +408,27 @@ export default class ProfilesController {
         }), [ResponseCodes.SUCCESS_WITH_DATA], "Profile fetched successfully"));
     }
 
-    private async updateProfileData(profile: Profile, validatedData: Partial<{ firstName, lastName, aadharNumber, voterIdNumber, gender, email, birthDate }>) {
+    private async updateProfileData(profile: Profile, validatedData: Partial<{
+        firstName,
+        lastName,
+        aadharNumber,
+        voterIdNumber,
+        gender,
+        email,
+        birthDate
+    }>) {
         profile.merge(validatedData);
         await profile.save();
     }
 
-    private async updateProfileAddress(profile: Profile, validatedData: Partial<{ addressLineOne, addressLineTwo, district, city, state, pincode }>) {
+    private async updateProfileAddress(profile: Profile, validatedData: Partial<{
+        addressLineOne,
+        addressLineTwo,
+        district,
+        city,
+        state,
+        pincode
+    }>) {
         if (profile.address) {
             profile.address.merge(validatedData);
             await profile.address.save();

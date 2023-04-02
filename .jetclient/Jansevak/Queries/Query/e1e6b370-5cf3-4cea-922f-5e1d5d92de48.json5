@@ -1,0 +1,67 @@
+{
+    id: "e1e6b370-5cf3-4cea-922f-5e1d5d92de48",
+    name: "Query",
+    icon: "FOLDER",
+    sortWeight: 2000000,
+    requests: [
+        {
+            id: "70389d96-b6f5-4920-b686-54550fe95dc6",
+            name: "Create new query",
+            method: "POST",
+            url: "http://{{host}}:{{port}}/{{api}}/query/create",
+            headers: [
+                {
+                    key: "Content-Type",
+                    value: "multipart/form-data"
+                }
+            ],
+            body: {
+                type: "FORM_DATA",
+                formData: [
+                    {
+                        type: "TEXT",
+                        key: "form",
+                        value: "{ \"subject\": \"New query 1\", \"description\": \"some descriptions\", \"category\": \"9e979ce6-e854-44ab-ad6d-de6fc17372d7\" }",
+                        disabled: false
+                    },
+                    {
+                        type: "TEXT",
+                        key: "relation",
+                        value: "{ \"on_behalf_of\": \"bbb8b5ab-4c4d-444b-8705-02651e6a4ac9\", \"assigned_to\": \"3fd96e38-1dff-4867-84f4-7e766d9c9702\" }",
+                        disabled: false
+                    },
+                    {
+                        type: "FILE",
+                        key: "attachments",
+                        value: "Screenshot 2021-01-14 133429.png",
+                        disabled: false
+                    },
+                    {
+                        type: "FILE",
+                        key: "attachments",
+                        value: "Workshop-Brochure.pdf",
+                        disabled: false
+                    }
+                ]
+            }
+        },
+        {
+            id: "342a041b-f426-4fd5-992c-c1ef53d1b94e",
+            name: "Get On-Behalf-Of list",
+            method: "GET",
+            url: "http://{{host}}:{{port}}/{{api}}/query/on-behalf/list"
+        },
+        {
+            id: "24b582e5-7242-44fd-935c-104543820b08",
+            name: "Get my queries",
+            method: "GET",
+            url: "http://{{host}}:{{port}}/{{api}}/query/list/my"
+        },
+        {
+            id: "7c7de792-12e4-4e1f-88f4-b9935710965e",
+            name: "Get queries assigned to me",
+            method: "GET",
+            url: "http://{{host}}:{{port}}/{{api}}/query/list/assigned"
+        }
+    ]
+}

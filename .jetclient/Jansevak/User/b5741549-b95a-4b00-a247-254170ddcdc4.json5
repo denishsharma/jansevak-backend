@@ -1,0 +1,26 @@
+{
+    id: "b5741549-b95a-4b00-a247-254170ddcdc4",
+    name: "User",
+    icon: "FOLDER",
+    sortWeight: 4000000,
+    requests: [
+        {
+            id: "33857eea-6878-4325-a51c-c8bde6069bf6",
+            name: "Get user by FID",
+            method: "GET",
+            url: "http://{{host}}:{{port}}/{{api}}/user/fid/:fid?get=all",
+            queryParams: [
+                {
+                    key: "get",
+                    value: "all"
+                }
+            ],
+            pathVariables: [
+                {
+                    key: "fid",
+                    value: "947983916"
+                }
+            ]
+        }
+    ]
+}

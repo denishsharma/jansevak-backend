@@ -1,0 +1,47 @@
+{
+    id: "928c1d4d-3e1c-45bc-9939-52db9400502c",
+    name: "Family",
+    icon: "FOLDER",
+    sortWeight: 1000000,
+    requests: [
+        {
+            id: "1ac7bbb9-c9de-4cfc-9ccf-acb31192eda1",
+            name: "Create new member in family",
+            method: "POST",
+            url: "http://{{host}}:{{port}}/{{api}}/group/family/member/create",
+            body: {
+                type: "FORM_URL_ENCODED"
+            }
+        },
+        {
+            id: "e0a86ad2-d426-46c1-8909-a7485821335a",
+            name: "Add existing user to family",
+            method: "POST",
+            url: "http://{{host}}:{{port}}/{{api}}/group/family/member/add",
+            body: {
+                type: "JSON",
+                raw: '{\
+    "user": "73906cac-5697-46b2-ba31-f2b04bae0d52"\
+}'
+            }
+        },
+        {
+            id: "9b48946a-69d0-45f2-b44a-6a22bded51fb",
+            name: "Remove member from family",
+            method: "POST",
+            url: "http://{{host}}:{{port}}/{{api}}/group/family/member/remove",
+            body: {
+                type: "JSON",
+                raw: '{\
+    "user": "c8053e55-3c69-48a5-b657-c13af76a631c"\
+}'
+            }
+        },
+        {
+            id: "8cd0a365-ff23-44d1-9f17-48c48f773ac3",
+            name: "Get members in my family",
+            method: "GET",
+            url: "http://{{host}}:{{port}}/{{api}}/group/family/member/list"
+        }
+    ]
+}

@@ -32,6 +32,7 @@ import queryRoutes from "../routes/queryRoutes";
 import certRoutes from "../routes/certRoutes";
 import groupRoutes from "../routes/groupRoutes";
 import statisticRoutes from "../routes/statisticRoutes";
+import feedbackRoutes from "../routes/feedbackRoutes";
 
 Route.get("/", async () => {
     return { hello: "world" };
@@ -50,5 +51,6 @@ Route.group(() => {
     certRoutes();
     groupRoutes();
     statisticRoutes();
+    feedbackRoutes();
 }).prefix("/api/");
 

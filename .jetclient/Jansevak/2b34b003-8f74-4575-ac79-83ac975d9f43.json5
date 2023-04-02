@@ -1,0 +1,12 @@
+{
+    id: "2b34b003-8f74-4575-ac79-83ac975d9f43",
+    name: "Jansevak",
+    icon: "FOLDER",
+    sortWeight: 1000000,
+    auth: {
+        type: "BEARER",
+        bearer: {
+            token: "eyJhbGciOiJSUzI1NiJ9.eyJkYXRhIjp7ImlkIjoiYWJhZTRkNjUtYzFlZS00ZWRhLWJhMGQtN2E1MzM2MGY5NGQ1IiwicGVybWlzc2lvbnMiOlsiY2FuRWRpdE93biIsImNhbkNoYW5nZVBob25lTnVtYmVyIiwiY2FuVXNlUGFzc3dvcmQiLCJjYW5VcGRhdGVQcm9maWxlIiwiY2FuQ3JlYXRlQ29tcGxhaW50IiwiY2FuQXJjaGl2ZUNvbXBsYWludCJdLCJ1c2VySWQiOjExMn0sImlhdCI6MTY4MDE5ODM3OSwiZXhwIjoxNjgwODAzMTc5fQ.pKbhb1icbl5DKsleyBRQmgIZ8j6irwr0i0bVCHhMY89fdvHTFGAxBMify1WHnIOrJquvAeB-Dc0KacmYLOEoNds991pwIL9GxgWni7RcYrgqko-jsRVBTZpZUnfeY6kR5WZ8pizPm8gmp0BMIoAsFQHSrzbOGS92HG753dk3cRTBkJYZecBsYYl390gZZiBXju9JmVIqGXjardD4zBaKso56mB_ILWwcTbJwMvOSY38BYq8WsdfwvRayuHFqpMq-oVINxMmd9v8hqxAHcokOzqijRP-y2eJDX0fFEybk4ZvrtCn4EQffNhv4aIOOWnzH3zCxSzauqJiafGtvTQa06u8t0uZSTXCDpb1Wr57BWOJiOVE_6nkr1uoa_O-wvPwYsLd5GxHKKCS1ouXl25ZKeoGCU5-yBwgG024n6FMzxXyInYAwzRx2yzijnURK85SsftuvrkhmSRF3gP27GW3naNTUSDh6uXsbAfDILeq_8PSZYov5XGMVvbSZKAr_xeCtGxRHem6VEq-hxHrWUXA2jXZ1WGgZ4QGQ-K3qJL1jEPidFv3YJYoWwsNGQhqtUCUgqpZQXzyx9SFcyKod312KIyohUmACuakiAqSqwBIXiU00GzW-f6VhD1WEWrjNolPwh7j_tzlF2oZBe64ajxQFtYc6X0PHKvzWU3jY-dQ948k"
+        }
+    }
+}

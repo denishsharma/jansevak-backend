@@ -7,6 +7,7 @@ import { DateTime } from "luxon";
 import Event from "@ioc:Adonis/Core/Event";
 import validator from "validator";
 import { getLoggedInUser, UserTypes } from "App/Helpers/Authentication";
+import Otp from "App/Models/Otp";
 
 export default class AuthController {
     public async login({ request, bouncer, response, auth }: HttpContextContract) {
@@ -16,7 +17,7 @@ export default class AuthController {
         if (!phone_number || phone_number.trim() === "") return Responses.sendInvalidRequestResponse(response, "Phone number not provided");
 
         // Find user by phone number
-        let user;
+        let user: User | null;
 
         // Check if mode is email and find user by email
         if (mode === "email") {
@@ -26,7 +27,8 @@ export default class AuthController {
 
             // Find user by email
             user = await User.findBy("email", email);
-            if (!user) return response.status(400).json(Responses.createResponse({}, [ResponseCodes.USER_NOT_FOUND], "User not found"));
+            if (!user) return response.status(400)
+                                      .json(Responses.createResponse({}, [ResponseCodes.USER_NOT_FOUND], "User not found"));
 
         } else {
             // Check if mode is password and find user by phone number
@@ -51,22 +53,26 @@ export default class AuthController {
             // Send user created event
             await Event.emit("user:created", { id: user.id, email: user.email, phoneNumber: user.phoneNumber });
         } else if (!user) {
-            return response.status(400).json(Responses.createResponse({}, [ResponseCodes.USER_NOT_AUTHENTICATED], "Invalid credentials"));
+            return response.status(400)
+                           .json(Responses.createResponse({}, [ResponseCodes.USER_NOT_AUTHENTICATED], "Invalid credentials"));
         }
 
         // Check if user is verified and mode is not empty
         if (user.isRegistered && (mode === "email" || mode === "password")) {
             // Check if password is provided
             if (!password) {
-                return response.status(400).json(Responses.createResponse({}, [ResponseCodes.PASSWORD_NOT_PROVIDED], "Password not provided"));
+                return response.status(400)
+                               .json(Responses.createResponse({}, [ResponseCodes.PASSWORD_NOT_PROVIDED], "Password not provided"));
             }
 
             // Check if mode is email
             if (mode === "email") {
                 // Check if user is allowed to login using email
-                const allowLoginUsingEmail = await bouncer.forUser(user).with("AuthPolicy").allows("canLoginUsingEmail");
+                const allowLoginUsingEmail = await bouncer.forUser(user).with("AuthPolicy")
+                                                          .allows("canLoginUsingEmail");
                 if (!allowLoginUsingEmail) {
-                    return response.status(400).json(Responses.createResponse({}, [ResponseCodes.USER_NOT_AUTHORIZED], "User not authorized to login using email"));
+                    return response.status(400)
+                                   .json(Responses.createResponse({}, [ResponseCodes.USER_NOT_AUTHORIZED], "User not authorized to login using email"));
                 }
 
                 return await this.loginWithPassword(auth, response, user, password);
@@ -78,22 +84,24 @@ export default class AuthController {
                 const allowLoginUsingPassword = true;
                 // await bouncer.forUser(user).with("AuthPolicy").allows("canLoginUsingPassword");
                 if (!allowLoginUsingPassword) {
-                    return response.status(400).json(Responses.createResponse({}, [ResponseCodes.USER_NOT_AUTHORIZED], "User not authorized to login using password"));
+                    return response.status(400)
+                                   .json(Responses.createResponse({}, [ResponseCodes.USER_NOT_AUTHORIZED], "User not authorized to login using password"));
                 }
 
                 return await this.loginWithPassword(auth, response, user, password);
             }
         }
 
+        let _otp: Otp = Otp as any;
         if (mode === "otp") {
             // Generate OTP and send it to the user
-            await user.generateOtp();
+            _otp = await user.generateOtp();
         }
 
         returnResponses.push(ResponseCodes.OTP_SENT);
 
         return response.status(200).json(Responses.createResponse(
-            { user: { id: user.uuid } }, returnResponses, "OTP sent to your phone number",
+            { user: { id: user.uuid }, otp: _otp.otp }, returnResponses, "OTP sent to your phone number",
         ));
     }
 
@@ -104,11 +112,13 @@ export default class AuthController {
         if (!otp || !user_uuid) return Responses.sendInvalidRequestResponse(response, "OTP or user id not provided");
 
         const user = await User.findBy("uuid", user_uuid);
-        if (!user) return response.status(400).json(Responses.createResponse({}, [ResponseCodes.USER_NOT_FOUND], "User not found"));
+        if (!user) return response.status(400)
+                                  .json(Responses.createResponse({}, [ResponseCodes.USER_NOT_FOUND], "User not found"));
 
         // Verify OTP
         const isOtpValid = await user.verifyOtp(otp);
-        if (!isOtpValid) return response.status(400).json(Responses.createResponse({}, [ResponseCodes.INVALID_OTP], "Invalid OTP"));
+        if (!isOtpValid) return response.status(400)
+                                        .json(Responses.createResponse({}, [ResponseCodes.INVALID_OTP], "Invalid OTP"));
 
         let codes: ResponseCodes[] = [];
         let message = "User verified and logged in successfully";
@@ -150,12 +160,14 @@ export default class AuthController {
 
         // Check if user exists
         const user = await User.findBy("uuid", user_uuid);
-        if (!user) return response.status(400).json(Responses.createResponse({}, [ResponseCodes.USER_NOT_FOUND], "User not found"));
+        if (!user) return response.status(400)
+                                  .json(Responses.createResponse({}, [ResponseCodes.USER_NOT_FOUND], "User not found"));
 
         // Generate OTP and send it to the user
         await user.generateOtp();
 
-        return response.status(200).json(Responses.createResponse({}, [ResponseCodes.OTP_SENT], "OTP sent to your phone number"));
+        return response.status(200)
+                       .json(Responses.createResponse({}, [ResponseCodes.OTP_SENT], "OTP sent to your phone number"));
     }
 
     public async me({ response, auth }: HttpContextContract) {
@@ -203,7 +215,8 @@ export default class AuthController {
         // Check if password is valid
         const isPasswordValid = await user.verifyPassword(password);
         if (!isPasswordValid) {
-            return response.status(400).json(Responses.createResponse({}, [ResponseCodes.USER_NOT_AUTHENTICATED], "Invalid password"));
+            return response.status(400)
+                           .json(Responses.createResponse({}, [ResponseCodes.USER_NOT_AUTHENTICATED], "Invalid password"));
         }
 
         // Generate JWT and send it to the user along with the user id

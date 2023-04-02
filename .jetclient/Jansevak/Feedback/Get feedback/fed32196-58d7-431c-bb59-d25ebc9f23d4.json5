@@ -1,0 +1,20 @@
+{
+    id: "fed32196-58d7-431c-bb59-d25ebc9f23d4",
+    name: "Get feedback",
+    icon: "FOLDER",
+    sortWeight: 2000000,
+    requests: [
+        {
+            id: "2a624bdc-750a-442c-908d-aac0e76b9949",
+            name: "Get feedback of a user",
+            method: "GET",
+            url: "http://{{host}}:{{port}}/{{api}}/feedback/get/user/:userId",
+            pathVariables: [
+                {
+                    key: "userId",
+                    value: "2a18f444-1072-47f5-a31f-c9397cd6bbe5"
+                }
+            ]
+        }
+    ]
+}

@@ -1,0 +1,34 @@
+{
+    id: "5a3e5324-98cb-4823-9cf3-fbde384a2acc",
+    name: "Query Comment",
+    icon: "FOLDER",
+    sortWeight: 3000000,
+    requests: [
+        {
+            id: "644c1760-e67b-48f1-8f49-65fb4378922b",
+            name: "Add regular comment to query",
+            method: "POST",
+            url: "http://{{host}}:{{port}}/{{api}}/query/comment/regular",
+            body: {
+                type: "JSON",
+                raw: '{\
+    "query": "22e2681c-f3c4-4caa-93d5-574cd9f4b351",\
+    "comment": "random comment"\
+}'
+            }
+        },
+        {
+            id: "4ef479e1-43ce-4f13-9cfc-ddfaebe9ec90",
+            name: "Add log comment to query Copy",
+            method: "POST",
+            url: "http://{{host}}:{{port}}/{{api}}/query/comment/log",
+            body: {
+                type: "JSON",
+                raw: '{\
+    "query": "3d7694ae-1d62-482d-8267-3a180aa336e7",\
+    "status": "in_progress"\
+}'
+            }
+        }
+    ]
+}

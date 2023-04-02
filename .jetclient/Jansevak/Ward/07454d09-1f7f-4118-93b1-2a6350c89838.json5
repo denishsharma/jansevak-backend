@@ -1,0 +1,14 @@
+{
+    id: "07454d09-1f7f-4118-93b1-2a6350c89838",
+    name: "Ward",
+    icon: "FOLDER",
+    sortWeight: 6000000,
+    requests: [
+        {
+            id: "3279d2a7-c664-4560-a00d-8ff4b836853e",
+            name: "List wards",
+            method: "GET",
+            url: "http://{{host}}:{{port}}/{{api}}/ward/list"
+        }
+    ]
+}

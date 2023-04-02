@@ -1,0 +1,86 @@
+{
+    id: "89abe27c-f006-4712-8dd7-477f20d375ff",
+    name: "General",
+    icon: "FOLDER",
+    sortWeight: 2000000,
+    requests: [
+        {
+            id: "6ec14975-5006-4d49-bbda-0a782ab519b0",
+            name: "Create group",
+            method: "POST",
+            url: "http://{{host}}:{{port}}/{{api}}/group/create",
+            body: {
+                type: "JSON",
+                raw: '{\
+    "name": "new group 2",\
+    "description": ""\
+}'
+            }
+        },
+        {
+            id: "8a1c39c2-8bd7-4c88-8c5e-66e89100afd5",
+            name: "Add member to group",
+            method: "POST",
+            url: "http://{{host}}:{{port}}/{{api}}/group/:id/member/add",
+            pathVariables: [
+                {
+                    key: "id",
+                    value: "90344f97-38df-465d-83b4-a3077ecc94dd"
+                }
+            ],
+            body: {
+                type: "JSON",
+                raw: '{\
+    "users": [\
+        "e14d78b9-171a-433e-b965-7c50d05dbc51"\
+    ]\
+}'
+            }
+        },
+        {
+            id: "0901756f-1d8f-4a16-9367-9faeeb445d72",
+            name: "Remove member from group",
+            method: "POST",
+            url: "http://{{host}}:{{port}}/{{api}}/group/:id/member/remove",
+            pathVariables: [
+                {
+                    key: "id",
+                    value: "b500be8b-597c-4e02-bc49-82d46d4b15e1"
+                }
+            ],
+            body: {
+                type: "JSON",
+                raw: '{\
+    "users": [\
+        "dfd209a9-ce78-401b-867b-cd6e760abf82",\
+        "2199c6c3-5620-4e22-ba37-557d479103ab"\
+    ]\
+}'
+            }
+        },
+        {
+            id: "f7e87ab6-86c0-4edc-9ec3-5ee60923e09e",
+            name: "Show my groups",
+            method: "GET",
+            url: "http://{{host}}:{{port}}/{{api}}/group/list/:user",
+            pathVariables: [
+                {
+                    key: "user",
+                    value: "69f044a0-545e-4514-90ea-c27db267ba04"
+                }
+            ]
+        },
+        {
+            id: "55f7be84-b0e8-4413-b136-97503af8e22f",
+            name: "List members of group",
+            method: "GET",
+            url: "http://{{host}}:{{port}}/{{api}}/group/:id/member/list",
+            pathVariables: [
+                {
+                    key: "id",
+                    value: "f1e46912-1cc4-4ccf-a0c6-c841cc35b95d"
+                }
+            ]
+        }
+    ]
+}

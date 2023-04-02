@@ -1,0 +1,69 @@
+{
+    id: "eb0c465e-b44a-4806-9592-ed05205eca81",
+    name: "Get Nagariks",
+    icon: "FOLDER",
+    sortWeight: 1000000,
+    requests: [
+        {
+            id: "c32e59b3-5c0d-423a-bc60-b9459d253fcc",
+            name: "Get all nagariks",
+            description: "List all nagariks without any filter",
+            method: "GET",
+            url: "http://{{host}}:{{port}}/{{api}}/user/nagarik/list/all?only=verified",
+            queryParams: [
+                {
+                    key: "only",
+                    value: "verified",
+                    description: "Get only verified nagariks"
+                },
+                {
+                    key: "only",
+                    value: "notVerified",
+                    description: "Get only not verified nagariks",
+                    disabled: true
+                }
+            ]
+        },
+        {
+            id: "2ee4c0eb-df08-491f-8dd0-0fb62e675ce1",
+            name: "Get ward nagariks",
+            description: "List all nagariks in the ward",
+            method: "GET",
+            url: "http://{{host}}:{{port}}/{{api}}/user/nagarik/list/ward/:wardId",
+            pathVariables: [
+                {
+                    key: "wardId",
+                    value: "81301-040219538",
+                    description: "Ward id to get nagariks of"
+                }
+            ]
+        },
+        {
+            id: "b7fe651e-24c7-4035-a4e2-11746c850af3",
+            name: "Get assigned nagariks",
+            description: "List all nagariks that are assgined to user",
+            method: "GET",
+            url: "http://{{host}}:{{port}}/{{api}}/user/nagarik/list/assigned/:assignedTo?only=notVerified",
+            queryParams: [
+                {
+                    key: "only",
+                    value: "verified",
+                    description: "Get only verified nagariks",
+                    disabled: true
+                },
+                {
+                    key: "only",
+                    value: "notVerified",
+                    description: "Get only not verified nagariks"
+                }
+            ],
+            pathVariables: [
+                {
+                    key: "assignedTo",
+                    value: "2a18f444-1072-47f5-a31f-c9397cd6bbe5",
+                    description: "User id to get nagariks of"
+                }
+            ]
+        }
+    ]
+}

@@ -1,0 +1,48 @@
+{
+    id: "7a8b588b-9468-4e1f-b200-e977820034dc",
+    name: "Jansevak",
+    icon: "FOLDER",
+    sortWeight: 2000000,
+    requests: [
+        {
+            id: "e019ce7f-bd38-41db-a425-2ac8ec5b061b",
+            name: "Add new Jansevak",
+            method: "POST",
+            url: "http://{{host}}:{{port}}/{{api}}/user/jansevak/create",
+            body: {
+                type: "FORM_DATA",
+                formData: [
+                    {
+                        type: "TEXT",
+                        key: "user",
+                        value: "{\n    \"phone_number\": \"9821379178\",\n    \"ward\": \"5171770758\"\n}",
+                        disabled: false
+                    },
+                    {
+                        type: "TEXT",
+                        key: "profile",
+                        value: "{\n    \"first_name\": \"John\",\n    \"last_name\": \"Doe\",\n    \"gender\": \"male\",\n    \"email\": \"\",\n    \"birth_date\": \"\",\n    \"aadhar_number\": \"\",\n    \"voter_id_number\": \"\",\n    \"address\": {\n        \"address_line_1\": \"some where\",\n        \"address_line_2\": \"\",\n        \"pincode\": \"400080\",\n        \"district\": \"mumbai\",\n        \"city\": \"mumbai\",\n        \"state\": \"maharashtra\"\n    }\n}",
+                        disabled: false
+                    }
+                ]
+            }
+        },
+        {
+            id: "400ae94d-60da-4cfe-b0b2-11cf027bd519",
+            name: "List all jansevak",
+            method: "GET",
+            url: "http://{{host}}:{{port}}/{{api}}/user/jansevak/list?user=&ward=40436-788519054",
+            queryParams: [
+                {
+                    key: "user",
+                    value: "",
+                    description: "Id of the user to fetch jansevak list for"
+                },
+                {
+                    key: "ward",
+                    value: "40436-788519054"
+                }
+            ]
+        }
+    ]
+}
