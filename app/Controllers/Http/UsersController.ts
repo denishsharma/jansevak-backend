@@ -271,7 +271,9 @@ export default class UsersController {
                     referenceId: newJansevakProfile.id,
                 });
 
-                newJansevakProfile.avatar = await Drive.getUrl(avatarAttachment.filePath);
+                newJansevakProfile.avatar = await Drive.getSignedUrl(avatarAttachment.fileName, {
+                    contentType: avatarAttachment.mimeType,
+                });
                 await newJansevakProfile.save();
             } catch (e) {
                 throw new UnknownErrorException(e.message, e.messages);
@@ -612,7 +614,11 @@ export default class UsersController {
             query.where("is_setup_completed", true);
         }).if(only === "notSetupCompleted", (query) => {
             query.where("is_setup_completed", false);
-        }).preload("allocation").preload("profile");
+        }).preload("allocation", (query) => {
+            query.preload("allocatedToUser", (query) => {
+                query.preload("profile");
+            });
+        }).preload("profile");
 
         // load query status summary for each nagrik
         const nagariksQueryStatusSummary = assignedNagariks.map(async (nagrik) => {
@@ -632,7 +638,15 @@ export default class UsersController {
                 relations: {
                     profile: { fields: { pick: ["first_name", "last_name", "full_name", "initials_and_last_name", "avatar_url"] } },
                     allocation: {
-                        fields: { omit: ["deleted_at", "created_at", "updated_at", "allocatedToUser"] },
+                        fields: { omit: ["deleted_at", "created_at", "updated_at"] },
+                        relations: {
+                            allocatedToUser: {
+                                fields: { pick: ["uuid", "user_type", "phone_number"] },
+                                relations: {
+                                    profile: { fields: { pick: ["first_name", "last_name", "full_name", "initials_and_last_name", "avatar_url"] } },
+                                },
+                            },
+                        },
                     },
                 },
             }), { query_status_summary: nagrikQueryStatusSummary?.query_status_summary });

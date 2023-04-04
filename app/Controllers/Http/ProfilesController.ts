@@ -33,7 +33,7 @@ export default class ProfilesController {
 
         // get required data
         const { user: _userRaw, profile: _profileRaw } = request.only(["user", "profile"]);
-        const [_user, _profile] = [_userRaw, _profileRaw].map((raw) => JSON.parse(raw));
+        const [_user, _profile] = [_userRaw, _profileRaw].map((raw) => raw ? JSON.parse(raw) : {});
         const _avatar = request.file("avatar");
 
         // validate request with validator and schema
@@ -121,7 +121,7 @@ export default class ProfilesController {
             }
         }
 
-        return response.status(200).json(Responses.createResponse(validatedData, [], "Profile updated successfully"));
+        return response.status(200).json(Responses.createResponse(null, [ResponseCodes.SUCCESS_WITH_NO_DATA], "Profile updated successfully"));
     }
 
     public async setupProfile({ auth, request, response }: HttpContextContract) {
