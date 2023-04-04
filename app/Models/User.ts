@@ -264,6 +264,7 @@ export default class User extends compose(BaseModel, SoftDeletes) {
             payload: {
                 id: this.uuid,
                 permissions: await getPermissionNames(this),
+                user_type: UserTypes[this.userType],
             },
         });
     }
@@ -275,7 +276,13 @@ export default class User extends compose(BaseModel, SoftDeletes) {
      * @returns {Promise<JWTTokenContract<GetProviderRealUser<keyof ProvidersList>>>}
      */
     public async refreshToken(auth: any, refreshToken: string) {
-        return await auth.use("jwt").loginViaRefreshToken(refreshToken, { payload: { id: this.uuid } });
+        return await auth.use("jwt").loginViaRefreshToken(refreshToken, {
+            payload: {
+                id: this.uuid,
+                permissions: await getPermissionNames(this),
+                user_type: UserTypes[this.userType],
+            },
+        });
     }
 
     /**

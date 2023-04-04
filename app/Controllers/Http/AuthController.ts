@@ -148,7 +148,7 @@ export default class AuthController {
         }
 
         return response.json(Responses.createResponse(
-            { jwt, user: { id: user.uuid, permissions: await getPermissionNames(user) } }, codes, message,
+            { jwt, user: { id: user.uuid, permissions: await getPermissionNames(user), user_type: user.userType } }, codes, message,
         ));
     }
 
@@ -223,7 +223,7 @@ export default class AuthController {
         const jwt = await user.login(auth);
 
         return response.json(Responses.createResponse(
-            { jwt, user: { id: user.uuid, permissions: await getPermissionNames(user) } },
+            { jwt, user: { id: user.uuid, permissions: await getPermissionNames(user), user_type: user.userType } },
             [ResponseCodes.USER_LOGGED_IN],
             "User logged in successfully",
         ));
