@@ -121,7 +121,43 @@ export default class ProfilesController {
             }
         }
 
-        return response.status(200).json(Responses.createResponse(null, [ResponseCodes.SUCCESS_WITH_NO_DATA], "Profile updated successfully"));
+        // load profile and allocation with jansevak and ward
+        await user.load("profile", (query) => {
+            query.preload("address");
+        });
+        await user.load("allocation", (query) => {
+            query.preload("wardUser").preload("allocatedToUser");
+        });
+
+        return response.status(200).json(Responses.createResponse(user.serialize({
+            fields: { omit: ["deleted_at", "updated_at", "email_verified_at"] },
+            relations: {
+                allocation: {
+                    fields: { omit: ["deleted_at", "created_at", "updated_at"] },
+                    relations: {
+                        ward: {
+                            fields: { omit: ["deleted_at", "created_at", "updated_at"] },
+                        },
+                        allocatedToUser: {
+                            fields: { pick: ["uuid", "fid", "user_type"] },
+                            relations: {
+                                profile: {
+                                    fields: { pick: ["first_name", "middle_name", "last_name", "gender", "email", "full_name", "avatar_url", "initials_and_last_name"] },
+                                },
+                            },
+                        },
+                    },
+                },
+                profile: {
+                    fields: { omit: ["deleted_at", "created_at", "updated_at"] },
+                    relations: {
+                        address: {
+                            fields: { omit: ["deleted_at", "created_at", "updated_at"] },
+                        },
+                    },
+                },
+            },
+        }), [ResponseCodes.SUCCESS_WITH_DATA], "Profile updated successfully"));
     }
 
     public async setupProfile({ auth, request, response }: HttpContextContract) {
