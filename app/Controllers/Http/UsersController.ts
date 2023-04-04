@@ -52,7 +52,7 @@ export default class UsersController {
         await user.save();
 
         return response.status(200)
-                       .json(Responses.createResponse({}, [ResponseCodes.PASSWORD_RESET_DONE], "User password updated"));
+            .json(Responses.createResponse({}, [ResponseCodes.PASSWORD_RESET_DONE], "User password updated"));
     }
 
     /**
@@ -68,14 +68,14 @@ export default class UsersController {
 
         if (!user) {
             return response.status(401)
-                           .json(Responses.createResponse({}, [ResponseCodes.USER_NOT_AUTHENTICATED], "User not authenticated"));
+                .json(Responses.createResponse({}, [ResponseCodes.USER_NOT_AUTHENTICATED], "User not authenticated"));
         }
 
         const { email } = request.only(["email"]);
 
         if (!email) {
             return response.status(400)
-                           .json(Responses.createResponse({}, [ResponseCodes.EMAIL_NOT_PROVIDED], "Email not provided"));
+                .json(Responses.createResponse({}, [ResponseCodes.EMAIL_NOT_PROVIDED], "Email not provided"));
         }
 
         if (!validator.isEmail(email)) {
@@ -86,7 +86,7 @@ export default class UsersController {
         await user.save();
 
         return response.status(200)
-                       .json(Responses.createResponse({}, [ResponseCodes.USER_UPDATED], "User email updated"));
+            .json(Responses.createResponse({}, [ResponseCodes.USER_UPDATED], "User email updated"));
     }
 
 
@@ -194,7 +194,7 @@ export default class UsersController {
         await newNagarikUser.related("allocation").create({
             wardId: await Ward.query().where("code", validatedData.user.ward).firstOrFail().then((ward) => ward.id),
             allocatedTo: await User.query().where("uuid", validatedData.user.jansevak).firstOrFail()
-                                   .then((user) => user.id),
+                .then((user) => user.id),
             verifiedBy: user.id,
             createdBy: user.id,
             verification: UserVerificationStatuses.VERIFIED,
@@ -202,7 +202,7 @@ export default class UsersController {
         });
 
         return response.status(200)
-                       .json(Responses.createResponse(newNagarikUser, [ResponseCodes.USER_CREATED], "New Nagarik created"));
+            .json(Responses.createResponse(newNagarikUser, [ResponseCodes.USER_CREATED], "New Nagarik created"));
     }
 
     public async newJansevak({ auth, response, request }: HttpContextContract) {
@@ -299,7 +299,7 @@ export default class UsersController {
         });
 
         return response.status(200)
-                       .json(Responses.createResponse(newJansevakUser, [ResponseCodes.USER_CREATED], "New Jansevak created"));
+            .json(Responses.createResponse(newJansevakUser, [ResponseCodes.USER_CREATED], "New Jansevak created"));
     }
 
     public async getJansevaks({ auth, response, request }: HttpContextContract) {
@@ -363,9 +363,9 @@ export default class UsersController {
 
             // get ward jansevaks
             const wardJansevaks = await UserAllocation.query().where("ward_id", user.allocation.wardId)
-                                                      .whereHas("user", (query) => {
-                                                          query.where("user_type", UserTypes.JANSEVAK);
-                                                      }).preload("user", (query) => {
+                .whereHas("user", (query) => {
+                    query.where("user_type", UserTypes.JANSEVAK);
+                }).preload("user", (query) => {
                     query.preload("profile");
                 });
 
@@ -392,9 +392,9 @@ export default class UsersController {
             const givenWard = await Ward.findBy("code", validatedData.ward);
             if (givenWard) {
                 const givenWardJansevaks = await UserAllocation.query().where("ward_id", givenWard.id)
-                                                               .whereHas("user", (query) => {
-                                                                   query.where("user_type", UserTypes.JANSEVAK);
-                                                               }).preload("user", (query) => {
+                    .whereHas("user", (query) => {
+                        query.where("user_type", UserTypes.JANSEVAK);
+                    }).preload("user", (query) => {
                         query.preload("profile");
                     });
 
@@ -411,7 +411,7 @@ export default class UsersController {
         }
 
         return response.status(200)
-                       .json(Responses.createResponse(jansevakObject, [ResponseCodes.SUCCESS_WITH_DATA], "Jansevak fetched"));
+            .json(Responses.createResponse(jansevakObject, [ResponseCodes.SUCCESS_WITH_DATA], "Jansevak fetched"));
 
     }
 
@@ -446,14 +446,45 @@ export default class UsersController {
             query.where("is_setup_completed", true);
         }).if(validatedData.only === "notSetupCompleted", (query) => {
             query.where("is_setup_completed", false);
+        }).preload("allocation", (query) => {
+            query.preload("allocatedToUser", (query) => {
+                query.preload("profile");
+            });
         }).preload("profile");
 
-        return response.status(200).json(Responses.createResponse(allNagariks.map((user) => user.serialize({
-            fields: { pick: ["uuid", "fid", "user_type", "phone_number", "is_setup_completed", "is_verified", "is_archived"] },
-            relations: {
-                profile: { fields: { pick: ["first_name", "last_name", "full_name", "initials_and_last_name", "avatar_url"] } },
-            },
-        })), [ResponseCodes.SUCCESS_WITH_DATA], "All Nagariks fetched"));
+        // load query status summary for each nagrik
+        const nagariksQueryStatusSummary = allNagariks.map(async (nagrik) => {
+            return {
+                nagrik_uuid: nagrik.uuid,
+                query_status_summary: await nagrik.getQueryStatusSummary(),
+            };
+        });
+
+        const nagariksQueryStatusSummaryResult = await Promise.all(nagariksQueryStatusSummary);
+
+        // add query status summary to nagrik object
+        const completeNagariks = allNagariks.map((nagrik) => {
+            const nagrikQueryStatusSummary = nagariksQueryStatusSummaryResult.find((nagrikQueryStatusSummary) => nagrikQueryStatusSummary.nagrik_uuid === nagrik.uuid);
+            return Object.assign(nagrik.serialize({
+                fields: { pick: ["uuid", "fid", "user_type", "phone_number", "is_setup_completed", "is_verified", "is_archived"] },
+                relations: {
+                    profile: { fields: { pick: ["first_name", "last_name", "full_name", "initials_and_last_name", "avatar_url"] } },
+                    allocation: {
+                        fields: { omit: ["deleted_at", "created_at", "updated_at"] },
+                        relations: {
+                            allocatedToUser: {
+                                fields: { pick: ["uuid", "user_type", "phone_number"] },
+                                relations: {
+                                    profile: { fields: { pick: ["first_name", "last_name", "full_name", "initials_and_last_name", "avatar_url"] } },
+                                },
+                            },
+                        },
+                    },
+                },
+            }), { query_status_summary: nagrikQueryStatusSummary?.query_status_summary });
+        });
+
+        return response.status(200).json(Responses.createResponse(completeNagariks, [ResponseCodes.SUCCESS_WITH_DATA], "All Nagariks fetched"));
     }
 
     public async getWardNagariks({ auth, response, params, request }: HttpContextContract) {
@@ -498,14 +529,45 @@ export default class UsersController {
             query.where("is_setup_completed", true);
         }).if(only === "notSetupCompleted", (query) => {
             query.where("is_setup_completed", false);
+        }).preload("allocation", (query) => {
+            query.preload("allocatedToUser", (query) => {
+                query.preload("profile");
+            });
         }).preload("profile");
 
-        return response.status(200).json(Responses.createResponse(wardNagariks.map((user) => user.serialize({
-            fields: { pick: ["uuid", "fid", "user_type", "phone_number", "is_setup_completed", "is_verified", "is_archived"] },
-            relations: {
-                profile: { fields: { pick: ["first_name", "last_name", "full_name", "initials_and_last_name", "avatar_url"] } },
-            },
-        })), [ResponseCodes.SUCCESS_WITH_DATA], "Ward Nagariks fetched"));
+        // load query status summary for each nagrik
+        const nagariksQueryStatusSummary = wardNagariks.map(async (nagrik) => {
+            return {
+                nagrik_uuid: nagrik.uuid,
+                query_status_summary: await nagrik.getQueryStatusSummary(),
+            };
+        });
+
+        const nagariksQueryStatusSummaryResult = await Promise.all(nagariksQueryStatusSummary);
+
+        // add query status summary to nagrik object
+        const completeNagariks = wardNagariks.map((nagrik) => {
+            const nagrikQueryStatusSummary = nagariksQueryStatusSummaryResult.find((nagrikQueryStatusSummary) => nagrikQueryStatusSummary.nagrik_uuid === nagrik.uuid);
+            return Object.assign(nagrik.serialize({
+                fields: { pick: ["uuid", "fid", "user_type", "phone_number", "is_setup_completed", "is_verified", "is_archived"] },
+                relations: {
+                    profile: { fields: { pick: ["first_name", "last_name", "full_name", "initials_and_last_name", "avatar_url"] } },
+                    allocation: {
+                        fields: { omit: ["deleted_at", "created_at", "updated_at"] },
+                        relations: {
+                            allocatedToUser: {
+                                fields: { pick: ["uuid", "user_type", "phone_number"] },
+                                relations: {
+                                    profile: { fields: { pick: ["first_name", "last_name", "full_name", "initials_and_last_name", "avatar_url"] } },
+                                },
+                            },
+                        },
+                    },
+                },
+            }), { query_status_summary: nagrikQueryStatusSummary?.query_status_summary });
+        });
+
+        return response.status(200).json(Responses.createResponse(completeNagariks, [ResponseCodes.SUCCESS_WITH_DATA], "Ward Nagariks fetched"));
     }
 
     public async getAssignedNagariks({ auth, response, params, request }: HttpContextContract) {
@@ -550,14 +612,33 @@ export default class UsersController {
             query.where("is_setup_completed", true);
         }).if(only === "notSetupCompleted", (query) => {
             query.where("is_setup_completed", false);
-        }).preload("profile");
+        }).preload("allocation").preload("profile");
 
-        return response.status(200).json(Responses.createResponse(assignedNagariks.map((user) => user.serialize({
-            fields: { pick: ["uuid", "fid", "user_type", "phone_number", "is_setup_completed", "is_verified", "is_archived"] },
-            relations: {
-                profile: { fields: { pick: ["first_name", "last_name", "full_name", "initials_and_last_name", "avatar_url"] } },
-            },
-        })), [ResponseCodes.SUCCESS_WITH_DATA], "Assigned Nagariks fetched"));
+        // load query status summary for each nagrik
+        const nagariksQueryStatusSummary = assignedNagariks.map(async (nagrik) => {
+            return {
+                nagrik_uuid: nagrik.uuid,
+                query_status_summary: await nagrik.getQueryStatusSummary(),
+            };
+        });
+
+        const nagariksQueryStatusSummaryResult = await Promise.all(nagariksQueryStatusSummary);
+
+        // add query status summary to nagrik object
+        const completeNagariks = assignedNagariks.map((nagrik) => {
+            const nagrikQueryStatusSummary = nagariksQueryStatusSummaryResult.find((nagrikQueryStatusSummary) => nagrikQueryStatusSummary.nagrik_uuid === nagrik.uuid);
+            return Object.assign(nagrik.serialize({
+                fields: { pick: ["uuid", "fid", "user_type", "phone_number", "is_setup_completed", "is_verified", "is_archived"] },
+                relations: {
+                    profile: { fields: { pick: ["first_name", "last_name", "full_name", "initials_and_last_name", "avatar_url"] } },
+                    allocation: {
+                        fields: { omit: ["deleted_at", "created_at", "updated_at", "allocatedToUser"] },
+                    },
+                },
+            }), { query_status_summary: nagrikQueryStatusSummary?.query_status_summary });
+        });
+
+        return response.status(200).json(Responses.createResponse(completeNagariks, [ResponseCodes.SUCCESS_WITH_DATA], "Assigned Nagariks fetched"));
     }
 
     public async getAllJansevaks({ auth, response }: HttpContextContract) {
@@ -704,7 +785,7 @@ export default class UsersController {
             __user = await User.query().where("fid", validatedData.fid).first();
         } else if (validatedData.get === "my_nagarik") {
             const _allocation = await UserAllocation.query().where("allocated_to", user.id)
-                                                    .orWhere("verified_by", user.id).preload("user");
+                .orWhere("verified_by", user.id).preload("user");
             __user = _allocation.map((allocation) => allocation.user).find((user) => user.fid === validatedData.fid);
         } else if (validatedData.get === "family") {
             let familyGroup: Group;

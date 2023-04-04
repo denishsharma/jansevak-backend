@@ -1,19 +1,20 @@
-import { DateTime } from "luxon";
-import Hash from "@ioc:Adonis/Core/Hash";
-import { BaseModel, beforeCreate, beforeSave, column, HasMany, hasMany, hasOne, HasOne, manyToMany, ManyToMany } from "@ioc:Adonis/Lucid/Orm";
-import { compose } from "@ioc:Adonis/Core/Helpers";
 import { SoftDeletes } from "@ioc:Adonis/Addons/LucidSoftDeletes";
-import { v4 as uuidv4 } from "uuid";
-import Otp from "App/Models/Otp";
 import Event from "@ioc:Adonis/Core/Event";
-import Permission from "App/Models/Permission";
-import Permissions, { getPermissionNames, hasAnyPermission, hasRequiredPermission } from "App/Helpers/Permissions";
-import Profile from "App/Models/Profile";
+import Hash from "@ioc:Adonis/Core/Hash";
+import { compose } from "@ioc:Adonis/Core/Helpers";
+import { BaseModel, beforeCreate, beforeSave, column, HasMany, hasMany, hasOne, HasOne, manyToMany, ManyToMany } from "@ioc:Adonis/Lucid/Orm";
 import { OtpTypes, UserTypes } from "App/Helpers/Authentication";
-import Group from "App/Models/Group";
-import UserQuery from "App/Models/UserQuery";
-import UserAllocation from "App/Models/UserAllocation";
 import { GroupTypes } from "App/Helpers/Groups";
+import Permissions, { getPermissionNames, hasAnyPermission, hasRequiredPermission } from "App/Helpers/Permissions";
+import { getQueryStatusSummary } from "App/Helpers/Statistics";
+import Group from "App/Models/Group";
+import Otp from "App/Models/Otp";
+import Permission from "App/Models/Permission";
+import Profile from "App/Models/Profile";
+import UserAllocation from "App/Models/UserAllocation";
+import UserQuery from "App/Models/UserQuery";
+import { DateTime } from "luxon";
+import { v4 as uuidv4 } from "uuid";
 
 export default class User extends compose(BaseModel, SoftDeletes) {
     @column({ isPrimary: true, serializeAs: null })
@@ -302,5 +303,9 @@ export default class User extends compose(BaseModel, SoftDeletes) {
     public async verifyPassword(password: string) {
         if (this.password === null) return false;
         return await Hash.verify(this.password, password);
+    }
+
+    public async getQueryStatusSummary() {
+        return await getQueryStatusSummary(this.id);
     }
 }
